@@ -1,4 +1,4 @@
-export APP_CMD_NAME = contentservice
+export APP_CMD_NAME = playlistservice
 export REGISTRY = vadimmakerov/music-streaming
 export APP_PROTO_FILES = \
 	api/contentservice/contentservice.proto \
