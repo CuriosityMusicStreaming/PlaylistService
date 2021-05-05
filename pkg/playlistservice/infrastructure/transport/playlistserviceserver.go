@@ -5,6 +5,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/protobuf/types/known/emptypb"
 	api "playlistservice/api/playlistservice"
+	"playlistservice/pkg/playlistservice/app/query"
 	"playlistservice/pkg/playlistservice/infrastructure"
 )
 
@@ -101,6 +102,56 @@ func (server *playlistServiceServer) RemovePlaylist(_ context.Context, req *api.
 	return &emptypb.Empty{}, nil
 }
 
-func (server *playlistServiceServer) GetPlaylist(ctx context.Context, req *api.GetPlaylistRequest) (*api.GetPlaylistResponse, error) {
+func (server *playlistServiceServer) GetPlaylist(_ context.Context, req *api.GetPlaylistRequest) (*api.GetPlaylistResponse, error) {
 	return nil, nil
+}
+
+func (server *playlistServiceServer) GetUserPlaylists(_ context.Context, req *api.GetUserPlaylistsRequest) (*api.GetUserPlaylistsResponse, error) {
+	userDesc, err := server.container.UserDescriptorSerializer().Deserialize(req.UserToken)
+	if err != nil {
+		return nil, err
+	}
+
+	queryService := server.container.PlaylistQueryService()
+
+	playlists, err := queryService.GetPlaylists(query.PlaylistSpecification{OwnerIDs: []uuid.UUID{userDesc.UserID}})
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*api.Playlist, len(playlists))
+	for i, playlistView := range playlists {
+		result[i] = convertPlaylistViewToApi(playlistView)
+	}
+
+	return &api.GetUserPlaylistsResponse{
+		Playlists: result,
+	}, nil
+}
+
+func convertPlaylistViewToApi(view query.PlaylistView) *api.Playlist {
+	return &api.Playlist{
+		PlaylistID:         view.ID.String(),
+		Name:               view.Name,
+		OwnerID:            view.OwnerID.String(),
+		CreatedAtTimestamp: uint64(view.CreatedAt.Unix()),
+		UpdatedAtTimestamp: uint64(view.UpdatedAt.Unix()),
+		PlaylistItems:      convertPlaylistItemViewsToApi(view.PlaylistItems),
+	}
+}
+
+func convertPlaylistItemViewsToApi(views []query.PlaylistItemView) []*api.PlaylistItem {
+	result := make([]*api.PlaylistItem, len(views))
+	for i, view := range views {
+		result[i] = convertPlaylistItemViewToApi(view)
+	}
+	return result
+}
+
+func convertPlaylistItemViewToApi(view query.PlaylistItemView) *api.PlaylistItem {
+	return &api.PlaylistItem{
+		PlaylistItemID:     view.ID.String(),
+		ContentID:          view.ContentID.String(),
+		CreatedAtTimestamp: uint64(view.CreatedAt.Unix()),
+	}
 }

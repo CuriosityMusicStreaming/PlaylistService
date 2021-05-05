@@ -4,13 +4,16 @@ import (
 	commonauth "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
 	commonmysql "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
+	"playlistservice/pkg/playlistservice/app/query"
 	"playlistservice/pkg/playlistservice/app/service"
 	"playlistservice/pkg/playlistservice/domain"
 	"playlistservice/pkg/playlistservice/infrastructure/mysql"
+	mysqlquery "playlistservice/pkg/playlistservice/infrastructure/mysql/query"
 )
 
 type DependencyContainer interface {
 	PlaylistService() service.PlaylistService
+	PlaylistQueryService() query.PlaylistQueryService
 	UserDescriptorSerializer() commonauth.UserDescriptorSerializer
 }
 
@@ -35,6 +38,10 @@ type dependencyContainer struct {
 
 func (container *dependencyContainer) PlaylistService() service.PlaylistService {
 	return service.NewPlaylistService(container.unitOfWorkFactory, container.eventDispatcher)
+}
+
+func (container *dependencyContainer) PlaylistQueryService() query.PlaylistQueryService {
+	return mysqlquery.NewPlaylistQueryService(container.client)
 }
 
 func (container *dependencyContainer) UserDescriptorSerializer() commonauth.UserDescriptorSerializer {
