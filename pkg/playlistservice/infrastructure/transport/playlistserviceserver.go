@@ -3,6 +3,8 @@ package transport
 import (
 	"github.com/google/uuid"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	api "playlistservice/api/playlistservice"
 	"playlistservice/pkg/playlistservice/app/query"
@@ -103,7 +105,39 @@ func (server *playlistServiceServer) RemovePlaylist(_ context.Context, req *api.
 }
 
 func (server *playlistServiceServer) GetPlaylist(_ context.Context, req *api.GetPlaylistRequest) (*api.GetPlaylistResponse, error) {
-	return nil, nil
+	userDesc, err := server.container.UserDescriptorSerializer().Deserialize(req.UserToken)
+	if err != nil {
+		return nil, err
+	}
+
+	queryService := server.container.PlaylistQueryService()
+
+	playlistID, err := uuid.Parse(req.PlaylistID)
+	if err != nil {
+		return nil, err
+	}
+
+	playlists, err := queryService.GetPlaylists(query.PlaylistSpecification{
+		OwnerIDs:    []uuid.UUID{userDesc.UserID},
+		PlaylistIDs: []uuid.UUID{playlistID},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(playlists) == 0 {
+		return nil, status.Errorf(codes.NotFound, "playlist not found")
+	}
+
+	playlist := playlists[0]
+
+	return &api.GetPlaylistResponse{
+		Name:               playlist.Name,
+		OwnerID:            playlist.OwnerID.String(),
+		CreatedAtTimestamp: uint64(playlist.CreatedAt.Unix()),
+		UpdatedAtTimestamp: uint64(playlist.UpdatedAt.Unix()),
+		PlaylistItems:      convertPlaylistItemViewsToApi(playlist.PlaylistItems),
+	}, nil
 }
 
 func (server *playlistServiceServer) GetUserPlaylists(_ context.Context, req *api.GetUserPlaylistsRequest) (*api.GetUserPlaylistsResponse, error) {

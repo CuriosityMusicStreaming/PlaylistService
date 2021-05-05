@@ -7,6 +7,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"playlistservice/pkg/playlistservice/app/query"
+	"strings"
 	"time"
 )
 
@@ -40,6 +41,10 @@ func (service *playlistQueryService) GetPlaylists(spec query.PlaylistSpecificati
 	}
 
 	fmt.Println("STOP")
+
+	if len(playlists) == 0 {
+		return nil, errors.WithStack(err)
+	}
 
 	playlistsIDs := make([]uuid.UUID, len(playlists))
 	for i, playlist := range playlists {
@@ -110,25 +115,40 @@ func (service *playlistQueryService) getPlaylistsItems(playlistIDs []uuid.UUID) 
 }
 
 func getWhereConditionsBySpec(spec query.PlaylistSpecification) (string, []interface{}, error) {
-	var conditions string
+	var conditions []string
 	var params []interface{}
 
 	if len(spec.OwnerIDs) != 0 {
 		ids, err := uuidsToBinaryUUIDs(spec.OwnerIDs)
 		if err != nil {
-			return conditions, nil, err
+			return "", nil, errors.WithStack(err)
 		}
 		sqlQuery, args, err := sqlx.In(`owner_id IN (?)`, ids)
 		if err != nil {
-			return conditions, nil, err
+			return "", nil, errors.WithStack(err)
 		}
-		conditions += sqlQuery
+		conditions = append(conditions, sqlQuery)
 		for _, arg := range args {
 			params = append(params, arg)
 		}
 	}
 
-	return conditions, params, nil
+	if len(spec.PlaylistIDs) != 0 {
+		ids, err := uuidsToBinaryUUIDs(spec.PlaylistIDs)
+		if err != nil {
+			return "", nil, errors.WithStack(err)
+		}
+		sqlQuery, args, err := sqlx.In(`playlist_id IN (?)`, ids)
+		if err != nil {
+			return "", nil, errors.WithStack(err)
+		}
+		conditions = append(conditions, sqlQuery)
+		for _, arg := range args {
+			params = append(params, arg)
+		}
+	}
+
+	return strings.Join(conditions, " AND "), params, nil
 }
 
 func uuidsToBinaryUUIDs(uuids []uuid.UUID) ([][]byte, error) {
