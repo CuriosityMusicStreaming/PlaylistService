@@ -125,19 +125,15 @@ func (repo *playlistRepository) Store(playlist domain.Playlist) error {
 		return errors.WithStack(err)
 	}
 
-	fmt.Println("STORE ITEMS")
 	err = repo.storePlaylistItems(playlist.ID, playlist.Items)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	fmt.Println("REMOVE ITEMS")
 	err = repo.removeDeletedItems(playlist.ID, playlist.Items)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-
-	fmt.Println("STOP")
 
 	return err
 }
@@ -167,8 +163,6 @@ func (repo *playlistRepository) fetchPlaylistItems(id uuid.UUID) ([]sqlxPlaylist
 	}
 
 	var playlistItems []sqlxPlaylistItem
-
-	fmt.Println("PLAYLIST ID", id.String())
 
 	err = repo.client.Select(&playlistItems, selectSql, binaryUUID)
 	if err != nil {
@@ -220,7 +214,7 @@ func (repo *playlistRepository) storePlaylistItems(playlistID domain.PlaylistID,
 		values = append(values, "(?, ?, ?, ?)")
 	}
 
-	_, err := repo.client.Exec(fmt.Sprintf(insertSql, strings.Join(values, " ")), args...)
+	_, err := repo.client.Exec(fmt.Sprintf(insertSql, strings.Join(values, ", ")), args...)
 	return errors.WithStack(err)
 }
 
