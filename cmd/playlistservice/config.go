@@ -17,6 +17,8 @@ type config struct {
 	ServeRESTAddress string `envconfig:"serve_rest_address" default:":8001"`
 	ServeGRPCAddress string `envconfig:"serve_grpc_address" default:":8002"`
 
+	ContentServiceGRPCAddress string `envconfig:"content_service_grpc_address"`
+
 	DatabaseUser     string `envconfig:"db_user" default:"root"`
 	DatabasePassword string `envconfig:"db_password" default:"1234"`
 	DatabaseHost     string `envconfig:"db_host" default:"playlistservice-db"`

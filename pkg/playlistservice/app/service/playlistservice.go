@@ -14,14 +14,20 @@ type PlaylistService interface {
 	RemovePlaylist(id uuid.UUID, userDescriptor auth.UserDescriptor) error
 }
 
-func NewPlaylistService(unitOfWorkFactory UnitOfWorkFactory, eventDispatcher domain.EventDispatcher) PlaylistService {
+func NewPlaylistService(
+	contentService ContentChecker,
+	unitOfWorkFactory UnitOfWorkFactory,
+	eventDispatcher domain.EventDispatcher,
+) PlaylistService {
 	return &playlistService{
+		contentService:    contentService,
 		unitOfWorkFactory: unitOfWorkFactory,
 		eventDispatcher:   eventDispatcher,
 	}
 }
 
 type playlistService struct {
+	contentService    ContentChecker
 	unitOfWorkFactory UnitOfWorkFactory
 	eventDispatcher   domain.EventDispatcher
 }
@@ -52,7 +58,11 @@ func (service *playlistService) SetPlaylistName(id uuid.UUID, userDescriptor aut
 func (service *playlistService) AddToPlaylist(id uuid.UUID, userDescriptor auth.UserDescriptor, contentID uuid.UUID) (uuid.UUID, error) {
 	var playlistItemID domain.PlaylistItemID
 	err := service.executeInUnitOfWork(func(provider RepositoryProvider) error {
-		var err error
+		err := service.contentService.ContentExists([]uuid.UUID{contentID})
+		if err != nil {
+			return err
+		}
+
 		playlistItemID, err = service.domainPlaylistService(provider).AddToPlaylist(
 			domain.PlaylistID(id),
 			domain.PlaylistOwnerID(userDescriptor.UserID),

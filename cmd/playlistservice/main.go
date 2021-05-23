@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"playlistservice/api/contentservice"
+	contentserviceapi "playlistservice/api/contentservice"
 	"playlistservice/api/playlistservice"
 	migrationsembedder "playlistservice/data/mysql"
 	"playlistservice/pkg/playlistservice/infrastructure"
@@ -74,9 +74,15 @@ func runService(config *config, logger log.MainLogger) error {
 	stopChan := make(chan struct{})
 	listenForKillSignal(stopChan)
 
+	contentServiceClient, err := initContentServiceClient(config)
+	if err != nil {
+		return err
+	}
+
 	container := infrastructure.NewDependencyContainer(
 		connector.TransactionalClient(),
 		logger,
+		contentServiceClient,
 	)
 
 	serviceApi := transport.NewPlaylistServiceServer(container)
@@ -99,9 +105,9 @@ func runService(config *config, logger log.MainLogger) error {
 		ServeImpl: func() error {
 			grpcGatewayMux := runtime.NewServeMux()
 			opts := []grpc.DialOption{grpc.WithInsecure()}
-			err := contentservice.RegisterContentServiceHandlerFromEndpoint(ctx, grpcGatewayMux, config.ServeGRPCAddress, opts)
-			if err != nil {
-				return err
+			err2 := playlistservice.RegisterPlayListServiceHandlerFromEndpoint(ctx, grpcGatewayMux, config.ServeGRPCAddress, opts)
+			if err2 != nil {
+				return err2
 			}
 
 			router := mux.NewRouter()
@@ -150,4 +156,17 @@ func makeGRPCUnaryInterceptor(logger log.Logger) grpc.UnaryServerInterceptor {
 		resp, err = loggerInterceptor(ctx, req, info, handler)
 		return resp, err
 	}
+}
+
+func initContentServiceClient(config *config) (contentserviceapi.ContentServiceClient, error) {
+	opts := []grpc.DialOption{
+		grpc.WithInsecure(),
+	}
+
+	conn, err := grpc.Dial(config.ContentServiceGRPCAddress, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return contentserviceapi.NewContentServiceClient(conn), nil
 }
