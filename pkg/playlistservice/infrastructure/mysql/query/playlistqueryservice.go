@@ -97,7 +97,7 @@ func (service *playlistQueryService) getPlaylistsItems(playlistIDs []uuid.UUID) 
 		return nil, err
 	}
 
-	sqlQuery, args, err := sqlx.In(`SELECT * FROM playlist_item WHERE playlist_item_id IN (?)`, ids)
+	sqlQuery, args, err := sqlx.In(`SELECT * FROM playlist_item WHERE playlist_id IN (?)`, ids)
 	if err != nil {
 		return nil, err
 	}
