@@ -33,10 +33,6 @@ func (u *unitOfWork) PlaylistRepository() domain.PlaylistRepository {
 	return repository.NewPlaylistRepository(u.transaction)
 }
 
-func (u *unitOfWork) PlaylistItemRepository() domain.PlaylistItemRepository {
-	return repository.NewPlaylistItemRepository(u.transaction)
-}
-
 func (u *unitOfWork) Complete(err error) error {
 	if err != nil {
 		err2 := u.transaction.Rollback()

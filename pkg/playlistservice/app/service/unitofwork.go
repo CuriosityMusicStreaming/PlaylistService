@@ -8,7 +8,6 @@ type UnitOfWorkFactory interface {
 
 type RepositoryProvider interface {
 	PlaylistRepository() domain.PlaylistRepository
-	PlaylistItemRepository() domain.PlaylistItemRepository
 }
 
 type UnitOfWork interface {

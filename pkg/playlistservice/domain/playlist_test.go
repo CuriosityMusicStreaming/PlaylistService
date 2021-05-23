@@ -8,14 +8,9 @@ import (
 
 func TestPlaylistService_CreatePlaylist(t *testing.T) {
 	playlistRepo := newMockPlaylistRepo()
-	playlistItemRepo := newMockPlaylistItemRepo()
 	eventDispatcher := newMockEventDispatcher()
 
-	playlistService := NewPlaylistService(
-		playlistRepo,
-		playlistItemRepo,
-		eventDispatcher,
-	)
+	playlistService := NewPlaylistService(playlistRepo, eventDispatcher)
 
 	{
 		newPlaylistName := "magic"
@@ -40,14 +35,9 @@ func TestPlaylistService_CreatePlaylist(t *testing.T) {
 
 func TestPlaylistService_SetPlaylistName(t *testing.T) {
 	playlistRepo := newMockPlaylistRepo()
-	playlistItemRepo := newMockPlaylistItemRepo()
 	eventDispatcher := newMockEventDispatcher()
 
-	playlistService := NewPlaylistService(
-		playlistRepo,
-		playlistItemRepo,
-		eventDispatcher,
-	)
+	playlistService := NewPlaylistService(playlistRepo, eventDispatcher)
 
 	{
 		playlistName := "magic"
@@ -95,14 +85,9 @@ func TestPlaylistService_SetPlaylistName(t *testing.T) {
 
 func TestPlaylistService_AddToPlaylist(t *testing.T) {
 	playlistRepo := newMockPlaylistRepo()
-	playlistItemRepo := newMockPlaylistItemRepo()
 	eventDispatcher := newMockEventDispatcher()
 
-	playlistService := NewPlaylistService(
-		playlistRepo,
-		playlistItemRepo,
-		eventDispatcher,
-	)
+	playlistService := NewPlaylistService(playlistRepo, eventDispatcher)
 
 	{
 		playlistName := "magic"
@@ -115,11 +100,13 @@ func TestPlaylistService_AddToPlaylist(t *testing.T) {
 		playlistItemId, err := playlistService.AddToPlaylist(playlistID, playlistOwner, content)
 		assert.NoError(t, err)
 
-		playlistItem, err := playlistItemRepo.Find(playlistItemId)
-		assert.NoError(t, err)
+		playlist, ok := playlistRepo.playlists[playlistID]
+		assert.Equal(t, true, ok)
+
+		playlistItem, ok := playlist.Items[playlistItemId]
+		assert.Equal(t, true, ok)
 
 		assert.Equal(t, content, playlistItem.ContentID)
-		assert.Equal(t, playlistID, playlistItem.PlaylistID)
 
 		assert.Equal(t, len(eventDispatcher.events), 2)
 		assert.IsType(t, PlaylistItemAdded{}, eventDispatcher.events[1])
@@ -133,14 +120,9 @@ func TestPlaylistService_AddToPlaylist(t *testing.T) {
 
 func TestPlaylistService_RemoveFromPlaylist(t *testing.T) {
 	playlistRepo := newMockPlaylistRepo()
-	playlistItemRepo := newMockPlaylistItemRepo()
 	eventDispatcher := newMockEventDispatcher()
 
-	playlistService := NewPlaylistService(
-		playlistRepo,
-		playlistItemRepo,
-		eventDispatcher,
-	)
+	playlistService := NewPlaylistService(playlistRepo, eventDispatcher)
 
 	{
 		playlistName := "magic"
@@ -167,14 +149,9 @@ func TestPlaylistService_RemoveFromPlaylist(t *testing.T) {
 
 func TestPlaylistService_RemovePlaylist(t *testing.T) {
 	playlistRepo := newMockPlaylistRepo()
-	playlistItemRepo := newMockPlaylistItemRepo()
 	eventDispatcher := newMockEventDispatcher()
 
-	playlistService := NewPlaylistService(
-		playlistRepo,
-		playlistItemRepo,
-		eventDispatcher,
-	)
+	playlistService := NewPlaylistService(playlistRepo, eventDispatcher)
 
 	{
 		playlistName := "magic"
@@ -198,15 +175,23 @@ func TestPlaylistService_RemovePlaylist(t *testing.T) {
 }
 
 func newMockPlaylistRepo() *mockPlaylistRepository {
-	return &mockPlaylistRepository{map[PlaylistID]Playlist{}}
+	return &mockPlaylistRepository{
+		map[PlaylistID]Playlist{},
+		map[PlaylistItemID]PlaylistItem{},
+	}
 }
 
 type mockPlaylistRepository struct {
-	playlists map[PlaylistID]Playlist
+	playlists     map[PlaylistID]Playlist
+	playlistItems map[PlaylistItemID]PlaylistItem
 }
 
 func (m *mockPlaylistRepository) NewID() PlaylistID {
 	return PlaylistID(uuid.New())
+}
+
+func (m *mockPlaylistRepository) NewPlaylistItemID() PlaylistItemID {
+	return PlaylistItemID(uuid.New())
 }
 
 func (m *mockPlaylistRepository) Find(id PlaylistID) (Playlist, error) {
@@ -218,6 +203,17 @@ func (m *mockPlaylistRepository) Find(id PlaylistID) (Playlist, error) {
 	return playlist, nil
 }
 
+func (m *mockPlaylistRepository) FindByItemID(playlistItemId PlaylistItemID) (Playlist, error) {
+	for _, playlist := range m.playlists {
+		for id := range playlist.Items {
+			if id == playlistItemId {
+				return playlist, nil
+			}
+		}
+	}
+	return Playlist{}, ErrPlaylistNotFound
+}
+
 func (m *mockPlaylistRepository) Store(playlist Playlist) error {
 	m.playlists[playlist.ID] = playlist
 
@@ -227,36 +223,6 @@ func (m *mockPlaylistRepository) Store(playlist Playlist) error {
 func (m *mockPlaylistRepository) Remove(id PlaylistID) error {
 	delete(m.playlists, id)
 
-	return nil
-}
-
-func newMockPlaylistItemRepo() *mockPlaylistItemRepo {
-	return &mockPlaylistItemRepo{map[PlaylistItemID]PlaylistItem{}}
-}
-
-type mockPlaylistItemRepo struct {
-	playlistsItems map[PlaylistItemID]PlaylistItem
-}
-
-func (m *mockPlaylistItemRepo) NewID() PlaylistItemID {
-	return PlaylistItemID(uuid.New())
-}
-
-func (m *mockPlaylistItemRepo) Find(id PlaylistItemID) (PlaylistItem, error) {
-	playlistItem, ok := m.playlistsItems[id]
-	if !ok {
-		return PlaylistItem{}, ErrPlaylistItemNotFound
-	}
-	return playlistItem, nil
-}
-
-func (m *mockPlaylistItemRepo) Store(playlistItem PlaylistItem) error {
-	m.playlistsItems[playlistItem.ID] = playlistItem
-	return nil
-}
-
-func (m *mockPlaylistItemRepo) Remove(id PlaylistItemID) error {
-	delete(m.playlistsItems, id)
 	return nil
 }
 

@@ -29,11 +29,7 @@ type playlistService struct {
 func (service *playlistService) CreatePlaylist(name string, userDescriptor auth.UserDescriptor) (uuid.UUID, error) {
 	var playlistID domain.PlaylistID
 	err := service.executeInUnitOfWork(func(provider RepositoryProvider) error {
-		domainService := domain.NewPlaylistService(
-			provider.PlaylistRepository(),
-			provider.PlaylistItemRepository(),
-			service.eventDispatcher,
-		)
+		domainService := service.domainPlaylistService(provider)
 
 		var err error
 
@@ -47,11 +43,7 @@ func (service *playlistService) CreatePlaylist(name string, userDescriptor auth.
 
 func (service *playlistService) SetPlaylistName(id uuid.UUID, userDescriptor auth.UserDescriptor, newName string) error {
 	return service.executeInUnitOfWork(func(provider RepositoryProvider) error {
-		domainService := domain.NewPlaylistService(
-			provider.PlaylistRepository(),
-			provider.PlaylistItemRepository(),
-			service.eventDispatcher,
-		)
+		domainService := service.domainPlaylistService(provider)
 
 		return domainService.SetPlaylistName(domain.PlaylistID(id), domain.PlaylistOwnerID(userDescriptor.UserID), newName)
 	})
@@ -103,9 +95,5 @@ func (service *playlistService) executeInUnitOfWork(f func(provider RepositoryPr
 }
 
 func (service *playlistService) domainPlaylistService(provider RepositoryProvider) domain.PlaylistService {
-	return domain.NewPlaylistService(
-		provider.PlaylistRepository(),
-		provider.PlaylistItemRepository(),
-		service.eventDispatcher,
-	)
+	return domain.NewPlaylistService(provider.PlaylistRepository(), service.eventDispatcher)
 }

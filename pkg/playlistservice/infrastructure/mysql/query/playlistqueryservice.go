@@ -22,7 +22,6 @@ type playlistQueryService struct {
 func (service *playlistQueryService) GetPlaylists(spec query.PlaylistSpecification) ([]query.PlaylistView, error) {
 	selectSql := `SELECT * FROM playlist`
 
-	fmt.Println("SPEC", spec)
 	conditions, args, err := getWhereConditionsBySpec(spec)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -33,14 +32,10 @@ func (service *playlistQueryService) GetPlaylists(spec query.PlaylistSpecificati
 
 	var playlists []sqlxPlaylistView
 
-	fmt.Println("SQL:", selectSql)
-	fmt.Println("ARGS:", args)
 	err = service.client.Select(&playlists, selectSql, args...)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-
-	fmt.Println("STOP")
 
 	if len(playlists) == 0 {
 		return nil, errors.WithStack(err)
