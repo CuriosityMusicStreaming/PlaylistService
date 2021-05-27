@@ -2,7 +2,6 @@ package domain
 
 import (
 	"errors"
-	"fmt"
 )
 
 type PlaylistService interface {
@@ -91,7 +90,6 @@ func (service *playlistService) AddToPlaylist(id PlaylistID, ownerID PlaylistOwn
 
 	playlist.AddItem(playlistItem)
 
-	fmt.Println("PLAYLISTED")
 	err = service.playlistRepo.Store(playlist)
 	if err != nil {
 		return [16]byte{}, err

@@ -199,7 +199,7 @@ func (repo *playlistRepository) storePlaylistItems(playlistID domain.PlaylistID,
 		}
 		args = append(args, binaryPlaylistID)
 
-		contentID, err := uuid.UUID(item.ID).MarshalBinary()
+		contentID, err := uuid.UUID(item.ContentID).MarshalBinary()
 		if err != nil {
 			return errors.WithStack(err)
 		}
