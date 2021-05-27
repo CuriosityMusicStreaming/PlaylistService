@@ -25,36 +25,32 @@ func NewDependencyContainer(
 	contentServiceClient contentserviceapi.ContentServiceClient,
 ) DependencyContainer {
 	return &dependencyContainer{
-		client:               client,
-		logger:               logger,
-		eventDispatcher:      eventDispatcher(logger),
-		unitOfWorkFactory:    unitOfWorkFactory(client),
-		contentServiceClient: contentServiceClient,
+		playlistService: playlistService(
+			contentChecker(contentServiceClient),
+			unitOfWorkFactory(client),
+			eventDispatcher(logger),
+		),
+		playlistQueryService:     playlistQueryService(client),
+		userDescriptorSerializer: userDescriptorSerializer(),
 	}
 }
 
 type dependencyContainer struct {
-	client               commonmysql.TransactionalClient
-	logger               logger.Logger
-	eventDispatcher      domain.EventDispatcher
-	unitOfWorkFactory    service.UnitOfWorkFactory
-	contentServiceClient contentserviceapi.ContentServiceClient
+	playlistService          service.PlaylistService
+	playlistQueryService     query.PlaylistQueryService
+	userDescriptorSerializer commonauth.UserDescriptorSerializer
 }
 
 func (container *dependencyContainer) PlaylistService() service.PlaylistService {
-	return service.NewPlaylistService(container.contentChecker(), container.unitOfWorkFactory, container.eventDispatcher)
+	return container.playlistService
 }
 
 func (container *dependencyContainer) PlaylistQueryService() query.PlaylistQueryService {
-	return mysqlquery.NewPlaylistQueryService(container.client)
+	return container.playlistQueryService
 }
 
 func (container *dependencyContainer) UserDescriptorSerializer() commonauth.UserDescriptorSerializer {
-	return commonauth.NewUserDescriptorSerializer()
-}
-
-func (container *dependencyContainer) contentChecker() service.ContentChecker {
-	return infrastructureservice.NewContentChecker(container.contentServiceClient)
+	return container.userDescriptorSerializer
 }
 
 func unitOfWorkFactory(client commonmysql.TransactionalClient) service.UnitOfWorkFactory {
@@ -69,4 +65,28 @@ func eventDispatcher(logger logger.Logger) domain.EventDispatcher {
 	}
 
 	return eventPublisher
+}
+
+func playlistService(
+	contentChecker service.ContentChecker,
+	unitOfWork service.UnitOfWorkFactory,
+	eventDispatcher domain.EventDispatcher,
+) service.PlaylistService {
+	return service.NewPlaylistService(
+		contentChecker,
+		unitOfWork,
+		eventDispatcher,
+	)
+}
+
+func playlistQueryService(client commonmysql.TransactionalClient) query.PlaylistQueryService {
+	return mysqlquery.NewPlaylistQueryService(client)
+}
+
+func userDescriptorSerializer() commonauth.UserDescriptorSerializer {
+	return commonauth.NewUserDescriptorSerializer()
+}
+
+func contentChecker(contentServiceClient contentserviceapi.ContentServiceClient) service.ContentChecker {
+	return infrastructureservice.NewContentChecker(contentServiceClient)
 }
