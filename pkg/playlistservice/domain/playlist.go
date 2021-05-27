@@ -64,8 +64,9 @@ type PlaylistItem struct {
 }
 
 var (
-	ErrPlaylistNotFound     = errors.New("playlist not found")
-	ErrPlaylistItemNotFound = errors.New("playlist item not found")
+	ErrPlaylistNotFound       = errors.New("playlist not found")
+	ErrPlaylistItemNotFound   = errors.New("playlist item not found")
+	ErrPlaylistByItemNotFound = errors.New("playlist by item not found")
 )
 
 type PlaylistRepository interface {

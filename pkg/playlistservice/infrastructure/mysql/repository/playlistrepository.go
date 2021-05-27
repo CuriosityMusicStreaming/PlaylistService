@@ -64,7 +64,18 @@ func (repo *playlistRepository) Find(id domain.PlaylistID) (domain.Playlist, err
 }
 
 func (repo *playlistRepository) FindByItemID(playlistItemId domain.PlaylistItemID) (domain.Playlist, error) {
-	const selectSql = `SELECT * FROM playlist LEFT JOIN playlist_item pi on playlist.playlist_id = pi.playlist_id WHERE playlist_item_id = ?`
+	const selectSql = `
+		SELECT 
+			p.playlist_id AS playlist_id, 
+			p.name AS name, 
+			p.owner_id AS owner_id, 
+			p.created_at AS created_at, 
+			p.updated_at AS updated_at
+		FROM 
+			playlist p 
+		LEFT JOIN playlist_item pi on p.playlist_id = pi.playlist_id 
+		WHERE pi.playlist_item_id = ?
+	`
 
 	binaryUUID, err := uuid.UUID(playlistItemId).MarshalBinary()
 	if err != nil {
@@ -76,7 +87,7 @@ func (repo *playlistRepository) FindByItemID(playlistItemId domain.PlaylistItemI
 	err = repo.client.Get(&playlist, selectSql, binaryUUID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return domain.Playlist{}, domain.ErrPlaylistNotFound
+			return domain.Playlist{}, domain.ErrPlaylistByItemNotFound
 		}
 		return domain.Playlist{}, errors.WithStack(err)
 	}
