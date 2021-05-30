@@ -29,4 +29,6 @@ type config struct {
 	AMQPPassword string `envconfig:"amqp_password" default:"guest"`
 
 	MaxDatabaseConnections int `envconfig:"max_connections" default:"10"`
+
+	StoredEventSenderDelay int `envconfig:"stored_event_sender_delay" default:"1"`
 }

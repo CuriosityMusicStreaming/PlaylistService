@@ -37,8 +37,8 @@ github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78/go.mod h1:LmzpDX
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/ClickHouse/clickhouse-go v1.3.12/go.mod h1:EaI/sW7Azgz9UATzd5ZdZHRUhHgv5+JMS9NSr2smCJI=
-github.com/CuriosityMusicStreaming/ComponentsPool v1.0.6 h1:I1E9Rp2Z1bdRL2VATpIndi7jVmz7skVZH55q2bwsFos=
-github.com/CuriosityMusicStreaming/ComponentsPool v1.0.6/go.mod h1:cii10gS2yw1F9FZFxIR0TW/udSZOTEqlV5WfUjrCGe0=
+github.com/CuriosityMusicStreaming/ComponentsPool v1.0.8-0.20210530175641-848755b2f0b1 h1:tkK7ctnwUXwRUfv7uLEbWu5iEg95jAVGWGe9CUpdSG4=
+github.com/CuriosityMusicStreaming/ComponentsPool v1.0.8-0.20210530175641-848755b2f0b1/go.mod h1:1npi8AWR5lIjwxoxKadU6ER7GYryjtTGUjXdWdTYrFU=
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
 github.com/Microsoft/go-winio v0.4.15-0.20190919025122-fc70bd9a86b5/go.mod h1:tTuCMEN+UleMWgg9dVx4Hu52b1bJo+59jBh3ajtinzw=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=

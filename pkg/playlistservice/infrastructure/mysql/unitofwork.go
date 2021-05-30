@@ -16,17 +16,28 @@ type unitOfWorkFactory struct {
 	client mysql.TransactionalClient
 }
 
-func (factory *unitOfWorkFactory) NewUnitOfWork(_ string) (service.UnitOfWork, error) {
+func (factory *unitOfWorkFactory) NewUnitOfWork(lockName string) (service.UnitOfWork, error) {
 	transaction, err := factory.client.BeginTransaction()
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	return &unitOfWork{transaction: transaction}, nil
+	var lock *mysql.Lock
+	if lockName != "" {
+		l := mysql.NewLock(factory.client, lockName)
+		lock = &l
+		err = lock.Lock()
+		if err != nil {
+			return nil, errors.Wrap(transaction.Rollback(), err.Error())
+		}
+	}
+
+	return &unitOfWork{transaction: transaction, lock: lock}, nil
 }
 
 type unitOfWork struct {
 	transaction mysql.Transaction
+	lock        *mysql.Lock
 }
 
 func (u *unitOfWork) PlaylistRepository() domain.PlaylistRepository {
@@ -34,6 +45,17 @@ func (u *unitOfWork) PlaylistRepository() domain.PlaylistRepository {
 }
 
 func (u *unitOfWork) Complete(err error) error {
+	if u.lock != nil {
+		lockErr := u.lock.Unlock()
+		if err != nil {
+			if lockErr != nil {
+				err = errors.Wrap(err, lockErr.Error())
+			}
+		} else {
+			err = lockErr
+		}
+	}
+
 	if err != nil {
 		err2 := u.transaction.Rollback()
 		if err2 != nil {

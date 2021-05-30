@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/amqp"
 	jsonlog "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/logger"
-	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
+	commonmysql "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/server"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"google.golang.org/grpc"
@@ -18,6 +19,8 @@ import (
 	"playlistservice/api/playlistservice"
 	migrationsembedder "playlistservice/data/mysql"
 	"playlistservice/pkg/playlistservice/infrastructure"
+	"playlistservice/pkg/playlistservice/infrastructure/integrationevent"
+	"playlistservice/pkg/playlistservice/infrastructure/mysql"
 	"playlistservice/pkg/playlistservice/infrastructure/transport"
 	"syscall"
 	"time"
@@ -47,13 +50,13 @@ func main() {
 }
 
 func runService(config *config, logger log.MainLogger) error {
-	dsn := mysql.DSN{
+	dsn := commonmysql.DSN{
 		User:     config.DatabaseUser,
 		Password: config.DatabasePassword,
 		Host:     config.DatabaseHost,
 		Database: config.DatabaseName,
 	}
-	connector := mysql.NewConnector()
+	connector := commonmysql.NewConnector()
 	err := connector.MigrateUp(dsn, migrationsembedder.MigrationsEmbedder)
 	if err != nil {
 		logger.Error(err, "failed to migrate")
@@ -69,10 +72,28 @@ func runService(config *config, logger log.MainLogger) error {
 		Password: config.AMQPPassword,
 		Host:     config.AMQPHost,
 	}, logger)
-	defer amqpConnection.Stop()
 
 	stopChan := make(chan struct{})
 	listenForKillSignal(stopChan)
+
+	transactionalClient := connector.TransactionalClient()
+
+	integrationEventTransport := integrationevent.NewIntegrationEventTransport(
+		integrationevent.NewIntegrationEventHandler(logger),
+	)
+	amqpConnection.AddChannel(integrationEventTransport)
+
+	eventStore := mysql.NewEventStore(transactionalClient)
+
+	storedEventSender := initStoredEventSender(
+		transactionalClient,
+		eventStore,
+		integrationEventTransport,
+		logger,
+		time.Duration(config.StoredEventSenderDelay)*time.Second,
+	)
+
+	defer storedEventSender.Stop()
 
 	contentServiceClient, err := initContentServiceClient(config)
 	if err != nil {
@@ -83,7 +104,15 @@ func runService(config *config, logger log.MainLogger) error {
 		connector.TransactionalClient(),
 		logger,
 		contentServiceClient,
+		eventStore,
+		storedEventSender.Increment,
 	)
+
+	err = amqpConnection.Start()
+	if err != nil {
+		return err
+	}
+	defer amqpConnection.Stop()
 
 	serviceApi := transport.NewPlaylistServiceServer(container)
 	serverHub := server.NewHub(stopChan)
@@ -169,4 +198,22 @@ func initContentServiceClient(config *config) (contentserviceapi.ContentServiceC
 	}
 
 	return contentserviceapi.NewContentServiceClient(conn), nil
+}
+
+func initStoredEventSender(
+	client commonmysql.TransactionalClient,
+	eventStore storedevent.Store,
+	integrationEvenTransport storedevent.Transport,
+	logger log.Logger,
+	delay time.Duration,
+) storedevent.Sender {
+	tracker := mysql.NewEventsDispatchTracker(client)
+
+	return storedevent.NewStoredEventSender(
+		eventStore,
+		tracker,
+		integrationEvenTransport,
+		delay,
+		func(err error) { logger.Error(err) },
+	)
 }

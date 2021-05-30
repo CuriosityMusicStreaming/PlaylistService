@@ -4,6 +4,12 @@ type Event interface {
 	ID() string
 }
 
+type HandlerFunc func(event Event) error
+
+func (f HandlerFunc) Handle(event Event) error {
+	return f(event)
+}
+
 type EventHandler interface {
 	Handle(event Event) error
 }
