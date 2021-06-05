@@ -78,9 +78,7 @@ func runService(config *config, logger log.MainLogger) error {
 
 	transactionalClient := connector.TransactionalClient()
 
-	integrationEventTransport := integrationevent.NewIntegrationEventTransport(
-		integrationevent.NewIntegrationEventHandler(logger),
-	)
+	integrationEventTransport := integrationevent.NewIntegrationEventTransport()
 	amqpConnection.AddChannel(integrationEventTransport)
 
 	eventStore := mysql.NewEventStore(transactionalClient)
@@ -107,6 +105,8 @@ func runService(config *config, logger log.MainLogger) error {
 		eventStore,
 		storedEventSender.Increment,
 	)
+
+	integrationEventTransport.SetHandler(container.IntegrationEventHandler())
 
 	err = amqpConnection.Start()
 	if err != nil {

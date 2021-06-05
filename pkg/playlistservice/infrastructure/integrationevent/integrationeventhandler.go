@@ -1,20 +1,82 @@
 package integrationevent
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
+	"github.com/google/uuid"
+	"playlistservice/pkg/playlistservice/app/service"
 )
 
-func NewIntegrationEventHandler(logger logger.Logger) Handler {
-	return &integrationEventListener{logger: logger}
+const (
+	privateContentAvailabilityType int = 1
+)
+
+type DependencyContainer interface {
+	PlaylistService() service.PlaylistService
 }
 
-type integrationEventListener struct {
-	logger logger.Logger
+func NewIntegrationEventHandler(logger logger.Logger, container DependencyContainer) Handler {
+	return &integrationEventHandler{
+		logger:    logger,
+		container: container,
+	}
 }
 
-func (handler *integrationEventListener) Handle(msgBody string) error {
-	handler.logger.Info(fmt.Sprintf("Event received with body %s", msgBody))
+type integrationEventHandler struct {
+	logger    logger.Logger
+	container DependencyContainer
+}
+
+func (handler *integrationEventHandler) Handle(msgBody string) error {
+	var e event
+
+	err := json.Unmarshal([]byte(msgBody), &e)
+	if err != nil {
+		handler.logger.Error(err, fmt.Sprintf("Failed to unmarshall integration event with body %s", msgBody))
+		return err
+	}
+
+	handler.logger.Info(fmt.Sprintf("Integration event received with body %s", msgBody))
+
+	err = handler.handleEvents(e)
+	if err != nil {
+		handler.logger.Error(err, fmt.Sprintf("Failed to handle integration event with type %s", e.Type))
+		return err
+	}
 
 	return nil
+}
+
+func (handler *integrationEventHandler) handleEvents(e event) error {
+	if e.Type == "content_availability_type_changed" {
+		payload := contentAvailabilityTypeChangedPayload{}
+		err := json.Unmarshal(e.Payload, &payload)
+		if err != nil {
+			return err
+		}
+
+		if payload.ContentAvailabilityType != privateContentAvailabilityType {
+			return nil
+		}
+
+		contentID, err := uuid.Parse(payload.ContentID)
+		if err != nil {
+			return err
+		}
+
+		return handler.container.PlaylistService().RemoveFromPlaylists([]uuid.UUID{contentID})
+	}
+
+	return nil
+}
+
+type event struct {
+	Type    string          `json:"type"`
+	Payload json.RawMessage `json:"payload"`
+}
+
+type contentAvailabilityTypeChangedPayload struct {
+	ContentID               string `json:"content_id"`
+	ContentAvailabilityType int    `json:"content_availability_type"`
 }

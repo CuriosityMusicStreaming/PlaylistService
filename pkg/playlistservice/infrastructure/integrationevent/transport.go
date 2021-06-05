@@ -3,6 +3,7 @@ package integrationevent
 import (
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
 	commonamqp "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/amqp"
+	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 )
 
@@ -11,8 +12,7 @@ const (
 	domainEventExchangeType = "topic"
 	domainEventsQueueName   = "playlist_service_domain_event"
 
-	contentType   = "application/json; charset=utf-8"
-	routingPrefix = "playlist_service."
+	contentType = "application/json; charset=utf-8"
 
 	transportName = "amqp_integration_events"
 )
@@ -24,10 +24,11 @@ type Handler interface {
 type Transport interface {
 	commonamqp.Channel
 	storedevent.Transport
+	SetHandler(handler Handler)
 }
 
-func NewIntegrationEventTransport(handler Handler) Transport {
-	return &transport{handler: handler}
+func NewIntegrationEventTransport() Transport {
+	return &transport{}
 }
 
 type transport struct {
@@ -36,18 +37,21 @@ type transport struct {
 	handler Handler
 }
 
+func (t *transport) SetHandler(handler Handler) {
+	t.handler = handler
+}
+
 func (t *transport) Name() string {
 	return transportName
 }
 
-func (t *transport) Send(eventType, msgBody string) error {
+func (t *transport) Send(_, msgBody string) error {
 	msg := amqp.Publishing{
 		DeliveryMode: amqp.Persistent,
 		ContentType:  contentType,
 		Body:         []byte(msgBody),
 	}
-	routingKey := routingPrefix + eventType
-	return t.channel.Publish(domainEventExchangeName, routingKey, false, false, msg)
+	return t.channel.Publish(domainEventExchangeName, "", false, false, msg)
 }
 
 func (t *transport) Connect(conn *amqp.Connection) error {
@@ -63,6 +67,10 @@ func (t *transport) Connect(conn *amqp.Connection) error {
 	err = channel.ExchangeDeclare(domainEventExchangeName, domainEventExchangeType, true, false, false, false, nil)
 	if err != nil {
 		return err
+	}
+
+	if t.handler == nil {
+		return errors.New("cannot connect to read channel without handler")
 	}
 
 	return t.connectToReadChannel()
@@ -87,7 +95,7 @@ func (t *transport) connectToReadChannel() error {
 	go func() {
 		for delivery := range readChan {
 			err = t.handler.Handle(string(delivery.Body))
-			if err != nil {
+			if err == nil {
 				err = delivery.Ack(false)
 			} else {
 				err = delivery.Nack(false, true)
