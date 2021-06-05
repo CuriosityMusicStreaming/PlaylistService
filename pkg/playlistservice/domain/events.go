@@ -84,7 +84,7 @@ type PlaylistItemRemoved struct {
 }
 
 func (p PlaylistItemRemoved) ID() string {
-	panic("playlist_item_removed")
+	return "playlist_item_removed"
 }
 
 type PlaylistRemoved struct {
@@ -93,5 +93,5 @@ type PlaylistRemoved struct {
 }
 
 func (p PlaylistRemoved) ID() string {
-	panic("playlist_removed")
+	return "playlist_removed"
 }

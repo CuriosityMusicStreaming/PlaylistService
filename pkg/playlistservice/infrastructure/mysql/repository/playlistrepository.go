@@ -219,32 +219,35 @@ func (repo *playlistRepository) storePlaylistItems(playlistID domain.PlaylistID,
 }
 
 func (repo *playlistRepository) removeDeletedItems(playlistID domain.PlaylistID, items map[domain.PlaylistItemID]domain.PlaylistItem) error {
-	if len(items) == 0 {
-		return nil
-	}
-
-	const deleteSql = `DELETE FROM playlist_item WHERE playlist_item_id NOT IN (?) AND playlist_id = ?`
+	deleteSql := `DELETE FROM playlist_item WHERE playlist_id = ?`
 
 	binaryPlaylistID, err := uuid.UUID(playlistID).MarshalBinary()
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	playlistItemIDs := make([][]byte, 0, len(items))
-	for itemID := range items {
-		binary, err2 := uuid.UUID(itemID).MarshalBinary()
+	args := []interface{}{binaryPlaylistID}
+
+	if len(items) != 0 {
+		playlistItemIDs := make([][]byte, 0, len(items))
+		for itemID := range items {
+			binary, err2 := uuid.UUID(itemID).MarshalBinary()
+			if err2 != nil {
+				return err2
+			}
+			playlistItemIDs = append(playlistItemIDs, binary)
+		}
+
+		query, params, err2 := sqlx.In("AND playlist_item_id NOT IN (?)", playlistItemIDs)
 		if err2 != nil {
 			return err2
 		}
-		playlistItemIDs = append(playlistItemIDs, binary)
+
+		deleteSql += " " + query
+		args = append(args, params...)
 	}
 
-	query, args, err := sqlx.In(deleteSql, playlistItemIDs, binaryPlaylistID)
-	if err != nil {
-		return err
-	}
-
-	_, err = repo.client.Exec(query, args...)
+	_, err = repo.client.Exec(deleteSql, args...)
 	return err
 }
 
@@ -265,7 +268,7 @@ func convertPlaylistItems(sqlxItems []sqlxPlaylistItem) []domain.PlaylistItemDat
 	for _, item := range sqlxItems {
 		result = append(result, &playlistItemData{
 			id:        item.ID,
-			contentID: item.ID,
+			contentID: item.ContentID,
 			createdAt: item.CreatedAt,
 		})
 	}
