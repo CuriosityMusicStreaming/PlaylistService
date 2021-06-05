@@ -24,9 +24,9 @@ func TestPlaylistService_CreatePlaylist(t *testing.T) {
 		playlist, err := playlistRepo.Find(playlistID)
 		assert.NoError(t, err)
 
-		assert.Equal(t, playlist.ID, playlistID)
-		assert.Equal(t, playlist.Name, newPlaylistName)
-		assert.Equal(t, playlist.OwnerID, playlistOwner)
+		assert.Equal(t, playlist.ID(), playlistID)
+		assert.Equal(t, playlist.Name(), newPlaylistName)
+		assert.Equal(t, playlist.OwnerID(), playlistOwner)
 
 		assert.Equal(t, len(eventDispatcher.events), 1)
 		assert.IsType(t, PlaylistCreated{}, eventDispatcher.events[0])
@@ -53,7 +53,7 @@ func TestPlaylistService_SetPlaylistName(t *testing.T) {
 		playlist, err := playlistRepo.Find(playlistID)
 		assert.NoError(t, err)
 
-		assert.Equal(t, newPlaylistName, playlist.Name)
+		assert.Equal(t, newPlaylistName, playlist.Name())
 
 		assert.Equal(t, len(eventDispatcher.events), 2)
 		assert.IsType(t, PlaylistNameChanged{}, eventDispatcher.events[1])
@@ -79,7 +79,7 @@ func TestPlaylistService_SetPlaylistName(t *testing.T) {
 		playlist, err := playlistRepo.Find(playlistID)
 		assert.NoError(t, err)
 
-		assert.Equal(t, playlist.Name, playlistName, "playlist name didnt change")
+		assert.Equal(t, playlist.Name(), playlistName, "playlist name didnt change")
 	}
 }
 
@@ -103,10 +103,10 @@ func TestPlaylistService_AddToPlaylist(t *testing.T) {
 		playlist, ok := playlistRepo.playlists[playlistID]
 		assert.Equal(t, true, ok)
 
-		playlistItem, ok := playlist.Items[playlistItemId]
+		playlistItem, ok := playlist.Items()[playlistItemId]
 		assert.Equal(t, true, ok)
 
-		assert.Equal(t, content, playlistItem.ContentID)
+		assert.Equal(t, content, playlistItem.ContentID())
 
 		assert.Equal(t, len(eventDispatcher.events), 2)
 		assert.IsType(t, PlaylistItemAdded{}, eventDispatcher.events[1])
@@ -205,7 +205,7 @@ func (m *mockPlaylistRepository) Find(id PlaylistID) (Playlist, error) {
 
 func (m *mockPlaylistRepository) FindByItemID(playlistItemId PlaylistItemID) (Playlist, error) {
 	for _, playlist := range m.playlists {
-		for id := range playlist.Items {
+		for id := range playlist.Items() {
 			if id == playlistItemId {
 				return playlist, nil
 			}
@@ -215,7 +215,7 @@ func (m *mockPlaylistRepository) FindByItemID(playlistItemId PlaylistItemID) (Pl
 }
 
 func (m *mockPlaylistRepository) Store(playlist Playlist) error {
-	m.playlists[playlist.ID] = playlist
+	m.playlists[playlist.ID()] = playlist
 
 	return nil
 }

@@ -31,15 +31,18 @@ type playlistService struct {
 func (service *playlistService) CreatePlaylist(name string, ownerID PlaylistOwnerID) (PlaylistID, error) {
 	playlistID := service.playlistRepo.NewID()
 
-	playlist := NewPlaylist(playlistID, name, ownerID)
-
-	err := service.playlistRepo.Store(playlist)
+	playlist, err := NewPlaylist(playlistID, name, ownerID)
 	if err != nil {
-		return [16]byte{}, err
+		return PlaylistID{}, err
+	}
+
+	err = service.playlistRepo.Store(playlist)
+	if err != nil {
+		return PlaylistID{}, err
 	}
 
 	err = service.eventDispatcher.Dispatch(PlaylistCreated{
-		PlaylistID: playlist.ID,
+		PlaylistID: playlist.ID(),
 		OwnerID:    ownerID,
 	})
 	if err != nil {
@@ -55,15 +58,15 @@ func (service *playlistService) SetPlaylistName(id PlaylistID, ownerID PlaylistO
 		return err
 	}
 
-	if playlist.OwnerID != ownerID {
+	if playlist.OwnerID() != ownerID {
 		return ErrOnlyOwnerCanManagePlaylist
 	}
 
-	if playlist.Name == newName {
+	if playlist.Name() == newName {
 		return nil
 	}
 
-	playlist.Name = newName
+	playlist.SetName(newName)
 
 	err = service.playlistRepo.Store(playlist)
 	if err != nil {
@@ -79,16 +82,13 @@ func (service *playlistService) AddToPlaylist(id PlaylistID, ownerID PlaylistOwn
 		return [16]byte{}, err
 	}
 
-	if playlist.OwnerID != ownerID {
+	if playlist.OwnerID() != ownerID {
 		return [16]byte{}, ErrOnlyOwnerCanManagePlaylist
 	}
 
-	playlistItem := PlaylistItem{
-		ID:        service.playlistRepo.NewPlaylistItemID(),
-		ContentID: contentID,
-	}
+	newPlaylistItemID := service.playlistRepo.NewPlaylistItemID()
 
-	playlist.AddItem(playlistItem)
+	playlist.AddItem(newPlaylistItemID, contentID)
 
 	err = service.playlistRepo.Store(playlist)
 	if err != nil {
@@ -96,15 +96,15 @@ func (service *playlistService) AddToPlaylist(id PlaylistID, ownerID PlaylistOwn
 	}
 
 	err = service.eventDispatcher.Dispatch(PlaylistItemAdded{
-		PlaylistID:     playlist.ID,
-		PlaylistItemID: playlistItem.ID,
-		ContentID:      playlistItem.ContentID,
+		PlaylistID:     playlist.ID(),
+		PlaylistItemID: newPlaylistItemID,
+		ContentID:      contentID,
 	})
 	if err != nil {
 		return [16]byte{}, err
 	}
 
-	return playlistItem.ID, nil
+	return newPlaylistItemID, nil
 }
 
 func (service *playlistService) RemoveFromPlaylist(id PlaylistItemID, ownerID PlaylistOwnerID) error {
@@ -113,7 +113,7 @@ func (service *playlistService) RemoveFromPlaylist(id PlaylistItemID, ownerID Pl
 		return err
 	}
 
-	if playlist.OwnerID != ownerID {
+	if playlist.OwnerID() != ownerID {
 		return ErrOnlyOwnerCanManagePlaylist
 	}
 
@@ -128,7 +128,7 @@ func (service *playlistService) RemoveFromPlaylist(id PlaylistItemID, ownerID Pl
 	}
 
 	return service.eventDispatcher.Dispatch(PlaylistItemRemoved{
-		PlaylistID:     playlist.ID,
+		PlaylistID:     playlist.ID(),
 		PlaylistItemID: id,
 	})
 }
@@ -139,7 +139,7 @@ func (service *playlistService) RemovePlaylist(id PlaylistID, ownerID PlaylistOw
 		return err
 	}
 
-	if playlist.OwnerID != ownerID {
+	if playlist.OwnerID() != ownerID {
 		return ErrOnlyOwnerCanManagePlaylist
 	}
 

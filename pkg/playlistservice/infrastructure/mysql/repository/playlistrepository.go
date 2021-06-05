@@ -53,14 +53,14 @@ func (repo *playlistRepository) Find(id domain.PlaylistID) (domain.Playlist, err
 		return domain.Playlist{}, errors.WithStack(err)
 	}
 
-	return domain.Playlist{
-		ID:        domain.PlaylistID(playlist.ID),
-		Name:      playlist.Name,
-		OwnerID:   domain.PlaylistOwnerID(playlist.OwnerID),
-		Items:     convertPlaylistItems(playlistItems),
-		CreatedAt: playlist.CreatedAt,
-		UpdatedAt: playlist.UpdatedAt,
-	}, nil
+	return domain.LoadPlaylist(&playlistData{
+		id:        playlist.ID,
+		name:      playlist.Name,
+		ownerID:   playlist.OwnerID,
+		items:     convertPlaylistItems(playlistItems),
+		createdAt: playlist.CreatedAt,
+		updatedAt: playlist.UpdatedAt,
+	}), nil
 }
 
 func (repo *playlistRepository) FindByItemID(playlistItemId domain.PlaylistItemID) (domain.Playlist, error) {
@@ -97,14 +97,14 @@ func (repo *playlistRepository) FindByItemID(playlistItemId domain.PlaylistItemI
 		return domain.Playlist{}, err
 	}
 
-	return domain.Playlist{
-		ID:        domain.PlaylistID(playlist.ID),
-		Name:      playlist.Name,
-		OwnerID:   domain.PlaylistOwnerID(playlist.OwnerID),
-		Items:     convertPlaylistItems(playlistItems),
-		CreatedAt: playlist.CreatedAt,
-		UpdatedAt: playlist.UpdatedAt,
-	}, nil
+	return domain.LoadPlaylist(&playlistData{
+		id:        playlist.ID,
+		name:      playlist.Name,
+		ownerID:   playlist.OwnerID,
+		items:     convertPlaylistItems(playlistItems),
+		createdAt: playlist.CreatedAt,
+		updatedAt: playlist.UpdatedAt,
+	}), nil
 }
 
 func (repo *playlistRepository) Store(playlist domain.Playlist) error {
@@ -114,34 +114,27 @@ func (repo *playlistRepository) Store(playlist domain.Playlist) error {
 		UPDATE playlist_id=VALUES(playlist_id), name=VALUES(name), owner_id=VALUES(owner_id), created_at=VALUES(created_at), updated_at=VALUES(updated_at)
 	`
 
-	now := time.Now()
-	playlist.UpdatedAt = &now
-
-	if playlist.CreatedAt == nil {
-		playlist.CreatedAt = &now
-	}
-
-	binaryUUID, err := uuid.UUID(playlist.ID).MarshalBinary()
+	binaryUUID, err := uuid.UUID(playlist.ID()).MarshalBinary()
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	ownerID, err := uuid.UUID(playlist.OwnerID).MarshalBinary()
+	ownerID, err := uuid.UUID(playlist.OwnerID()).MarshalBinary()
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	_, err = repo.client.Exec(insertSql, binaryUUID, playlist.Name, ownerID, playlist.CreatedAt, playlist.UpdatedAt)
+	_, err = repo.client.Exec(insertSql, binaryUUID, playlist.Name(), ownerID, playlist.CreatedAt(), playlist.UpdatedAt())
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	err = repo.storePlaylistItems(playlist.ID, playlist.Items)
+	err = repo.storePlaylistItems(playlist.ID(), playlist.Items())
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	err = repo.removeDeletedItems(playlist.ID, playlist.Items)
+	err = repo.removeDeletedItems(playlist.ID(), playlist.Items())
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -198,7 +191,7 @@ func (repo *playlistRepository) storePlaylistItems(playlistID domain.PlaylistID,
 	var args []interface{}
 
 	for _, item := range items {
-		itemID, err := uuid.UUID(item.ID).MarshalBinary()
+		itemID, err := uuid.UUID(item.ID()).MarshalBinary()
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -210,17 +203,13 @@ func (repo *playlistRepository) storePlaylistItems(playlistID domain.PlaylistID,
 		}
 		args = append(args, binaryPlaylistID)
 
-		contentID, err := uuid.UUID(item.ContentID).MarshalBinary()
+		contentID, err := uuid.UUID(item.ContentID()).MarshalBinary()
 		if err != nil {
 			return errors.WithStack(err)
 		}
 		args = append(args, contentID)
 
-		if item.CreatedAt == nil {
-			now := time.Now()
-			item.CreatedAt = &now
-		}
-		args = append(args, item.CreatedAt)
+		args = append(args, item.CreatedAt())
 
 		values = append(values, "(?, ?, ?, ?)")
 	}
@@ -271,14 +260,14 @@ func (repo playlistRepository) removePlaylistItems(playlistID domain.PlaylistID)
 	return err
 }
 
-func convertPlaylistItems(sqlxItems []sqlxPlaylistItem) map[domain.PlaylistItemID]domain.PlaylistItem {
-	result := make(map[domain.PlaylistItemID]domain.PlaylistItem)
+func convertPlaylistItems(sqlxItems []sqlxPlaylistItem) []domain.PlaylistItemData {
+	result := make([]domain.PlaylistItemData, 0, len(sqlxItems))
 	for _, item := range sqlxItems {
-		result[domain.PlaylistItemID(item.ID)] = domain.PlaylistItem{
-			ID:        domain.PlaylistItemID(item.ID),
-			ContentID: domain.ContentID(item.ContentID),
-			CreatedAt: item.CreatedAt,
-		}
+		result = append(result, &playlistItemData{
+			id:        item.ID,
+			contentID: item.ID,
+			createdAt: item.CreatedAt,
+		})
 	}
 	return result
 }
@@ -295,4 +284,55 @@ type sqlxPlaylistItem struct {
 	ID        uuid.UUID  `db:"playlist_item_id"`
 	ContentID uuid.UUID  `db:"content_id"`
 	CreatedAt *time.Time `db:"created_at"`
+}
+
+type playlistData struct {
+	id        uuid.UUID
+	name      string
+	ownerID   uuid.UUID
+	items     []domain.PlaylistItemData
+	createdAt *time.Time
+	updatedAt *time.Time
+}
+
+func (p *playlistData) ID() domain.PlaylistID {
+	return domain.PlaylistID(p.id)
+}
+
+func (p *playlistData) Name() string {
+	return p.name
+}
+
+func (p *playlistData) OwnerID() domain.PlaylistOwnerID {
+	return domain.PlaylistOwnerID(p.ownerID)
+}
+
+func (p *playlistData) CreatedAt() *time.Time {
+	return p.createdAt
+}
+
+func (p *playlistData) Items() []domain.PlaylistItemData {
+	return p.items
+}
+
+func (p *playlistData) UpdatedAt() *time.Time {
+	return p.updatedAt
+}
+
+type playlistItemData struct {
+	id        uuid.UUID
+	contentID uuid.UUID
+	createdAt *time.Time
+}
+
+func (p *playlistItemData) ID() domain.PlaylistItemID {
+	return domain.PlaylistItemID(p.id)
+}
+
+func (p *playlistItemData) ContentID() domain.ContentID {
+	return domain.ContentID(p.contentID)
+}
+
+func (p *playlistItemData) CreatedAt() *time.Time {
+	return p.createdAt
 }

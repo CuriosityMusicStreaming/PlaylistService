@@ -10,8 +10,10 @@ import (
 	"playlistservice/pkg/playlistservice/app/service"
 	"playlistservice/pkg/playlistservice/app/storedevent"
 	"playlistservice/pkg/playlistservice/domain"
+	"playlistservice/pkg/playlistservice/infrastructure/integrationevent"
 	"playlistservice/pkg/playlistservice/infrastructure/mysql"
 	mysqlquery "playlistservice/pkg/playlistservice/infrastructure/mysql/query"
+	infrastuctureservice "playlistservice/pkg/playlistservice/infrastructure/mysql/service"
 	infrastructureservice "playlistservice/pkg/playlistservice/infrastructure/service"
 )
 
@@ -19,6 +21,7 @@ type DependencyContainer interface {
 	PlaylistService() service.PlaylistService
 	PlaylistQueryService() query.PlaylistQueryService
 	UserDescriptorSerializer() commonauth.UserDescriptorSerializer
+	IntegrationEventHandler() integrationevent.Handler
 }
 
 func NewDependencyContainer(
@@ -32,15 +35,20 @@ func NewDependencyContainer(
 
 	completeNotifier.subscribe(storedEventSenderCallback)
 
-	return &dependencyContainer{
+	container := &dependencyContainer{
 		playlistService: playlistService(
 			contentChecker(contentServiceClient),
 			unitOfWorkFactory,
 			eventDispatcher(eventStore),
+			client,
 		),
 		playlistQueryService:     playlistQueryService(client),
 		userDescriptorSerializer: userDescriptorSerializer(),
 	}
+
+	container.integrationEventHandler = integrationEventHandler(logger, container)
+
+	return container
 }
 
 type completeNotifier struct {
@@ -61,6 +69,7 @@ type dependencyContainer struct {
 	playlistService          service.PlaylistService
 	playlistQueryService     query.PlaylistQueryService
 	userDescriptorSerializer commonauth.UserDescriptorSerializer
+	integrationEventHandler  integrationevent.Handler
 }
 
 func (container *dependencyContainer) PlaylistService() service.PlaylistService {
@@ -73,6 +82,10 @@ func (container *dependencyContainer) PlaylistQueryService() query.PlaylistQuery
 
 func (container *dependencyContainer) UserDescriptorSerializer() commonauth.UserDescriptorSerializer {
 	return container.userDescriptorSerializer
+}
+
+func (container *dependencyContainer) IntegrationEventHandler() integrationevent.Handler {
+	return container.integrationEventHandler
 }
 
 func unitOfWorkFactory(client commonmysql.TransactionalClient) (service.UnitOfWorkFactory, *completeNotifier) {
@@ -101,11 +114,13 @@ func playlistService(
 	contentChecker service.ContentChecker,
 	unitOfWork service.UnitOfWorkFactory,
 	eventDispatcher domain.EventDispatcher,
+	client commonmysql.Client,
 ) service.PlaylistService {
 	return service.NewPlaylistService(
 		contentChecker,
 		unitOfWork,
 		eventDispatcher,
+		infrastuctureservice.NewPlaylistRemover(client),
 	)
 }
 
@@ -119,4 +134,8 @@ func userDescriptorSerializer() commonauth.UserDescriptorSerializer {
 
 func contentChecker(contentServiceClient contentserviceapi.ContentServiceClient) service.ContentChecker {
 	return infrastructureservice.NewContentChecker(contentServiceClient)
+}
+
+func integrationEventHandler(logger logger.Logger, container DependencyContainer) integrationevent.Handler {
+	return integrationevent.NewIntegrationEventHandler(logger, container)
 }
