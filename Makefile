@@ -1,15 +1,18 @@
 export APP_CMD_NAME = playlistservice
+export APP_TEST_CMD_NAME = integrationtests
 export REGISTRY = vadimmakerov/music-streaming
 export APP_PROTO_FILES = \
 	api/contentservice/contentservice.proto \
-	api/playlistservice/playlistservice.proto
+	api/playlistservice/playlistservice.proto \
+	api/authorizationservice/authorizationservice.proto
 export DOCKER_IMAGE_NAME = $(REGISTRY)-$(APP_CMD_NAME):master
 
 all: build check test
 
 .PHONY: build
 build: sync-api generate modules
-	bin/go-build.sh "cmd" "bin/$(APP_CMD_NAME)" $(APP_CMD_NAME)
+	bin/go-build.sh "cmd/$(APP_CMD_NAME)" "bin/$(APP_CMD_NAME)" $(APP_CMD_NAME)
+	bin/go-build.sh "cmd/$(APP_TEST_CMD_NAME)" "bin/$(APP_TEST_CMD_NAME)" $(APP_TEST_CMD_NAME)
 
 .PHONY: generate
 generate:

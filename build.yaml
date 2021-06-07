@@ -1,3 +1,5 @@
 api:
     contentservice: master
     playlistservice: master
+    # for integration tests purposes
+    authorizationservice: master

@@ -1,0 +1,85 @@
+version: "3.3"
+
+services:
+    playlistservice-api-client:
+        container_name: playlistservice-api-client
+        build:
+            context: .
+            dockerfile: data/docker/tests/Dockerfile.tests
+        environment:
+            SERVE_GRPC_ADDRESS: :8082
+            PLAYLIST_SERVICE_HOST: playlistservice
+            PLAYLIST_SERVICE_REST_ADDRESS: :8001
+            PLAYLIST_SERVICE_GRPC_ADDRESS: :8002
+            CONTENT_SERVICE_HOST: contentservice
+            CONTENT_SERVICE_REST_ADDRESS: :8001
+        networks:
+            default:
+                aliases:
+                    - playlistservice-api-client
+
+    playlistservice:
+        image: vadimmakerov/music-streaming-playlistservice:master
+        container_name: playlistservice-tests
+        depends_on:
+            - db
+            - contentservice
+            - rabbitmq
+        environment:
+            SERVE_REST_ADDRESS: :8001
+            SERVE_GRPC_ADDRESS: :8002
+            DB_USER: root
+            DB_PASSWORD: 1234
+            DB_HOST: db
+            DB_NAME: playlistservicetests
+            AMQP_HOST: rabbitmq
+            AMQP_USER: guest
+            AMQP_PASSWORD: guest
+            CONTENT_SERVICE_GRPC_ADDRESS: contentservice:8002
+
+    contentservice:
+        image: vadimmakerov/music-streaming-contentservice:master
+        container_name: playlistservice-contentservice-tests
+        depends_on:
+            - db
+            - rabbitmq
+            - playlistservice-api-client
+        environment:
+            SERVE_REST_ADDRESS: :8001
+            SERVE_GRPC_ADDRESS: :8002
+            DB_USER: root
+            DB_PASSWORD: 1234
+            DB_HOST: db
+            DB_NAME: contentservicetests
+            AMQP_HOST: rabbitmq
+            AMQP_USER: guest
+            AMQP_PASSWORD: guest
+            AUTHORIZATION_SERVICE_GRPC_ADDRESS: playlistservice-api-client:8082
+
+    db:
+        image: percona
+        container_name: playlistservice-tests-db
+        environment:
+            MYSQL_ROOT_PASSWORD: 1234
+            MYSQL_DATABASE: playlistservicetests
+        healthcheck:
+            test: mysql -h127.0.0.1 -uroot -p1234 -e 'SELECT 1'
+            interval: 20s
+            timeout: 1s
+        volumes:
+            - test-db:/var/lib/mysql
+        entrypoint: sh -c "
+            echo 'CREATE DATABASE IF NOT EXISTS `contentservicetests`;' > /docker-entrypoint-initdb.d/init.sql;
+            /docker-entrypoint.sh --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --sql_mode=`STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION`
+            "
+
+    rabbitmq:
+        image: "rabbitmq:3.8-management"
+        container_name: playlistservice-tests-rabbitmq
+        hostname: services-rabbitmq
+
+volumes:
+    test-db:
+        driver_opts:
+            type: tmpfs
+            device: tmpfs
