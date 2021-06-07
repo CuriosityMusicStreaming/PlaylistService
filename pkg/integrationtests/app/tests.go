@@ -61,6 +61,15 @@ func (facade *playlistServiceApiFacade) GetUserPlaylists(userDescriptor auth.Use
 	})
 }
 
+func (facade *playlistServiceApiFacade) SetPlaylistTitle(playlistID string, title string, userDescriptor auth.UserDescriptor) error {
+	userToken, err := facade.serializer.Serialize(userDescriptor)
+	assertNoErr(err)
+
+	_ = userToken
+
+	return nil
+}
+
 func (facade *playlistServiceApiFacade) DeletePlaylist(playlistID string, userDescriptor auth.UserDescriptor) error {
 	userToken, err := facade.serializer.Serialize(userDescriptor)
 	assertNoErr(err)

@@ -48,3 +48,30 @@ func createPlaylist(serviceApiFacade *playlistServiceApiFacade) {
 		assertNoErr(serviceApiFacade.DeletePlaylist(secondPlaylistID, user))
 	}
 }
+
+func managePlaylist(serviceApiFacade *playlistServiceApiFacade) {
+	user := auth.UserDescriptor{UserID: uuid.New()}
+	//anotherUser := auth.UserDescriptor{UserID: uuid.New()}
+	playlistName := "Gibberish 1000 hours"
+	newPlaylistName := "new title"
+
+	{
+		playlistID, err := serviceApiFacade.CreatePlaylist(playlistName, user)
+		assertNoErr(err)
+
+		assertNoErr(serviceApiFacade.SetPlaylistTitle(playlistID, newPlaylistName, user))
+
+		playlist, err := serviceApiFacade.GetPlaylist(playlistID, user)
+		assertNoErr(err)
+
+		assertEqual(newPlaylistName, playlist.Name)
+
+		// error happend cause anotherUser cannot manage playlist
+		//assertNoErr(serviceApiFacade.SetPlaylistTitle(playlistID, newPlaylistName, anotherUser))
+
+		playlist, err = serviceApiFacade.GetPlaylist(playlistID, user)
+		assertNoErr(err)
+
+		assertEqual(newPlaylistName, playlist.Name)
+	}
+}
