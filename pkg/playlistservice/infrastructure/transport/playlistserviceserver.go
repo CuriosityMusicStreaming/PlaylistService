@@ -65,6 +65,27 @@ func (server *playlistServiceServer) AddToPlaylist(_ context.Context, req *api.A
 	}, nil
 }
 
+func (server *playlistServiceServer) SetPlaylistName(_ context.Context, req *api.SetPlaylistNameRequest) (*emptypb.Empty, error) {
+	userDesc, err := server.container.UserDescriptorSerializer().Deserialize(req.UserToken)
+	if err != nil {
+		return nil, err
+	}
+
+	playlistService := server.container.PlaylistService()
+
+	playlistID, err := uuid.Parse(req.PlaylistID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = playlistService.SetPlaylistName(playlistID, userDesc, req.NewName)
+	if err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
 func (server *playlistServiceServer) RemoveFromPlaylist(_ context.Context, req *api.RemoveFromPlaylistRequest) (*emptypb.Empty, error) {
 	userDesc, err := server.container.UserDescriptorSerializer().Deserialize(req.UserToken)
 	if err != nil {
