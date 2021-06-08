@@ -72,9 +72,13 @@ func (api *playlistServiceApi) SetPlaylistTitle(playlistID string, title string,
 		panic(err)
 	}
 
-	_ = userToken
+	_, err = api.client.SetPlaylistName(context.Background(), &playlistserviceapi.SetPlaylistNameRequest{
+		PlaylistID: playlistID,
+		NewName:    title,
+		UserToken:  userToken,
+	})
 
-	return nil
+	return api.transformError(err)
 }
 
 func (api *playlistServiceApi) DeletePlaylist(playlistID string, userDescriptor auth.UserDescriptor) error {
@@ -90,10 +94,44 @@ func (api *playlistServiceApi) DeletePlaylist(playlistID string, userDescriptor 
 	return api.transformError(err)
 }
 
+func (api *playlistServiceApi) AddToPlaylist(playlistID string, contentID string, userDescriptor auth.UserDescriptor) (string, error) {
+	userToken, err := api.serializer.Serialize(userDescriptor)
+	if err != nil {
+		panic(err)
+	}
+
+	resp, err := api.client.AddToPlaylist(context.Background(), &playlistserviceapi.AddToPlaylistRequest{
+		PlaylistID: playlistID,
+		UserToken:  userToken,
+		ContentID:  contentID,
+	})
+	if err != nil {
+		return "", api.transformError(err)
+	}
+
+	return resp.PlaylistItemID, nil
+}
+
+func (api *playlistServiceApi) RemoveFromPlaylist(playlistItemID string, userDescriptor auth.UserDescriptor) error {
+	userToken, err := api.serializer.Serialize(userDescriptor)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = api.client.RemoveFromPlaylist(context.Background(), &playlistserviceapi.RemoveFromPlaylistRequest{
+		PlaylistItemID: playlistItemID,
+		UserToken:      userToken,
+	})
+
+	return api.transformError(err)
+}
+
 func (api *playlistServiceApi) transformError(err error) error {
 	s, ok := status.FromError(err)
 	if ok {
 		switch s.Code() {
+		case codes.InvalidArgument:
+			return app.ErrContentNotFound
 		case codes.PermissionDenied:
 			return app.ErrOnlyOwnerCanManagePlaylist
 		}

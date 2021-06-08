@@ -5,21 +5,22 @@ import (
 	"github.com/google/uuid"
 )
 
-func playlistTests(serviceApiFacade PlaylistServiceApi, container UserContainer) {
-	createPlaylist(serviceApiFacade)
+func playlistTests(playlistServiceApi PlaylistServiceApi, container UserContainer) {
+	createPlaylist(playlistServiceApi)
+	managePlaylist(playlistServiceApi)
 }
 
-func createPlaylist(serviceApiFacade PlaylistServiceApi) {
+func createPlaylist(playlistServiceApi PlaylistServiceApi) {
 	user := auth.UserDescriptor{UserID: uuid.New()}
 
 	firstPlaylistName := "Gibberish 1000 hours"
 	secondPlaylistName := "Chill out"
 
 	{
-		firstPlaylistID, err := serviceApiFacade.CreatePlaylist(firstPlaylistName, user)
+		firstPlaylistID, err := playlistServiceApi.CreatePlaylist(firstPlaylistName, user)
 		assertNoErr(err)
 
-		playlists, err := serviceApiFacade.GetUserPlaylists(user)
+		playlists, err := playlistServiceApi.GetUserPlaylists(user)
 		assertNoErr(err)
 
 		assertEqual(1, len(playlists.Playlists))
@@ -30,48 +31,55 @@ func createPlaylist(serviceApiFacade PlaylistServiceApi) {
 		assertEqual(firstPlaylistName, playlist.Name)
 		assertEqual(user.UserID.String(), playlist.OwnerID)
 
-		secondPlaylistID, err := serviceApiFacade.CreatePlaylist(secondPlaylistName, user)
+		secondPlaylistID, err := playlistServiceApi.CreatePlaylist(secondPlaylistName, user)
 		assertNoErr(err)
 
-		playlists, err = serviceApiFacade.GetUserPlaylists(user)
+		playlists, err = playlistServiceApi.GetUserPlaylists(user)
 		assertNoErr(err)
 
 		assertEqual(2, len(playlists.Playlists))
 
-		secondPlaylist, err := serviceApiFacade.GetPlaylist(secondPlaylistID, user)
+		secondPlaylist, err := playlistServiceApi.GetPlaylist(secondPlaylistID, user)
 		assertNoErr(err)
 
 		assertEqual(secondPlaylistName, secondPlaylist.Name)
 		assertEqual(user.UserID.String(), secondPlaylist.OwnerID)
 
-		assertNoErr(serviceApiFacade.DeletePlaylist(firstPlaylistID, user))
-		assertNoErr(serviceApiFacade.DeletePlaylist(secondPlaylistID, user))
+		assertNoErr(playlistServiceApi.DeletePlaylist(firstPlaylistID, user))
+		assertNoErr(playlistServiceApi.DeletePlaylist(secondPlaylistID, user))
 	}
 }
 
-func managePlaylist(serviceApiFacade PlaylistServiceApi) {
+func managePlaylist(playlistServiceApi PlaylistServiceApi) {
 	user := auth.UserDescriptor{UserID: uuid.New()}
-	//anotherUser := auth.UserDescriptor{UserID: uuid.New()}
+	anotherUser := auth.UserDescriptor{UserID: uuid.New()}
 	playlistName := "Gibberish 1000 hours"
 	newPlaylistName := "new title"
 
 	{
-		playlistID, err := serviceApiFacade.CreatePlaylist(playlistName, user)
+		playlistID, err := playlistServiceApi.CreatePlaylist(playlistName, user)
 		assertNoErr(err)
 
-		assertNoErr(serviceApiFacade.SetPlaylistTitle(playlistID, newPlaylistName, user))
+		assertNoErr(playlistServiceApi.SetPlaylistTitle(playlistID, newPlaylistName, user))
 
-		playlist, err := serviceApiFacade.GetPlaylist(playlistID, user)
+		playlist, err := playlistServiceApi.GetPlaylist(playlistID, user)
+		assertNoErr(err)
+
+		assertEqual(newPlaylistName, playlist.Name)
+
+		assertEqual(playlistServiceApi.SetPlaylistTitle(playlistID, newPlaylistName, anotherUser), ErrOnlyOwnerCanManagePlaylist)
+
+		playlist, err = playlistServiceApi.GetPlaylist(playlistID, user)
 		assertNoErr(err)
 
 		assertEqual(newPlaylistName, playlist.Name)
 
-		// error happend cause anotherUser cannot manage playlist
-		//assertNoErr(serviceApiFacade.SetPlaylistTitle(playlistID, newPlaylistName, anotherUser))
+		assertEqual(playlistServiceApi.DeletePlaylist(playlistID, anotherUser), ErrOnlyOwnerCanManagePlaylist)
 
-		playlist, err = serviceApiFacade.GetPlaylist(playlistID, user)
-		assertNoErr(err)
-
-		assertEqual(newPlaylistName, playlist.Name)
+		assertNoErr(playlistServiceApi.DeletePlaylist(playlistID, user))
 	}
+}
+
+func playlistContent(playlistServiceApi PlaylistServiceApi) {
+
 }

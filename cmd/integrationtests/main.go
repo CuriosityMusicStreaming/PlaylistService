@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc"
 	"net/http"
 	"playlistservice/api/authorizationservice"
+	contentserviceapi "playlistservice/api/contentservice"
 	playlistserviceapi "playlistservice/api/playlistservice"
 	"playlistservice/pkg/integrationtests/app"
 	"playlistservice/pkg/integrationtests/infrastructure"
@@ -56,12 +57,20 @@ func runService(config *config, logger log.MainLogger) error {
 		return err
 	}
 
+	contentServiceClient, err := initContentServiceClient(opts, config)
+
 	logger.Info("Start tests")
+
+	userDescriptorSerializer := auth.NewUserDescriptorSerializer()
 
 	app.RunTests(
 		infrastructure.NewPlaylistServiceApi(
 			playlistServiceClient,
-			auth.NewUserDescriptorSerializer(),
+			userDescriptorSerializer,
+		),
+		infrastructure.NewContentServiceApi(
+			contentServiceClient,
+			userDescriptorSerializer,
 		),
 		userContainer,
 	)
@@ -102,6 +111,15 @@ func initPlaylistServiceClient(commonOpts []grpc.DialOption, config *config) (pl
 	}
 
 	return playlistserviceapi.NewPlayListServiceClient(conn), nil
+}
+
+func initContentServiceClient(commonOpts []grpc.DialOption, config *config) (contentserviceapi.ContentServiceClient, error) {
+	conn, err := grpc.Dial(fmt.Sprintf("%s%s", config.ContentServiceHost, config.PlaylistServiceGRPCAddress), commonOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return contentserviceapi.NewContentServiceClient(conn), nil
 }
 
 func runServer(server commonserver.Server, logger log.MainLogger) {

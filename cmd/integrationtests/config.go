@@ -20,6 +20,7 @@ type config struct {
 
 	ContentServiceHost        string `envconfig:"content_service_host"`
 	ContentServiceRESTAddress string `envconfig:"content_service_rest_address"`
+	ContentServiceGRPCAddress string `envconfig:"content_service_grpc_address"`
 
 	MaxWaitTimeSeconds int `envconfig:"max_wait_time_seconds"`
 

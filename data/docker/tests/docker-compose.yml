@@ -13,6 +13,7 @@ services:
             PLAYLIST_SERVICE_GRPC_ADDRESS: :8002
             CONTENT_SERVICE_HOST: contentservice
             CONTENT_SERVICE_REST_ADDRESS: :8001
+            CONTENT_SERVICE_GRPC_ADDRESS: :8002
         networks:
             default:
                 aliases:
