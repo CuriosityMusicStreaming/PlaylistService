@@ -5,11 +5,11 @@ import (
 	"github.com/google/uuid"
 )
 
-func playlistTests(serviceApiFacade *playlistServiceApiFacade, container UserContainer) {
+func playlistTests(serviceApiFacade PlaylistServiceApi, container UserContainer) {
 	createPlaylist(serviceApiFacade)
 }
 
-func createPlaylist(serviceApiFacade *playlistServiceApiFacade) {
+func createPlaylist(serviceApiFacade PlaylistServiceApi) {
 	user := auth.UserDescriptor{UserID: uuid.New()}
 
 	firstPlaylistName := "Gibberish 1000 hours"
@@ -49,7 +49,7 @@ func createPlaylist(serviceApiFacade *playlistServiceApiFacade) {
 	}
 }
 
-func managePlaylist(serviceApiFacade *playlistServiceApiFacade) {
+func managePlaylist(serviceApiFacade PlaylistServiceApi) {
 	user := auth.UserDescriptor{UserID: uuid.New()}
 	//anotherUser := auth.UserDescriptor{UserID: uuid.New()}
 	playlistName := "Gibberish 1000 hours"

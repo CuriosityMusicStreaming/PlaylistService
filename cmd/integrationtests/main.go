@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
 	jsonlog "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/logger"
 	commonserver "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/server"
@@ -50,7 +51,7 @@ func runService(config *config, logger log.MainLogger) error {
 		grpc.WithInsecure(),
 	}
 
-	contentServiceClient, err := initPlaylistServiceClient(opts, config)
+	playlistServiceClient, err := initPlaylistServiceClient(opts, config)
 	if err != nil {
 		return err
 	}
@@ -58,7 +59,10 @@ func runService(config *config, logger log.MainLogger) error {
 	logger.Info("Start tests")
 
 	app.RunTests(
-		contentServiceClient,
+		infrastructure.NewPlaylistServiceApi(
+			playlistServiceClient,
+			auth.NewUserDescriptorSerializer(),
+		),
 		userContainer,
 	)
 
