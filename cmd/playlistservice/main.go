@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/amqp"
@@ -9,7 +10,9 @@ import (
 	commonmysql "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/server"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"io"
 	stdlog "log"
 	"net/http"
@@ -197,6 +200,11 @@ func initContentServiceClient(config *config) (contentserviceapi.ContentServiceC
 		return nil, err
 	}
 
+	err = waitForConnectionReady(conn)
+	if err != nil {
+		return nil, err
+	}
+
 	return contentserviceapi.NewContentServiceClient(conn), nil
 }
 
@@ -216,4 +224,17 @@ func initStoredEventSender(
 		delay,
 		func(err error) { logger.Error(err) },
 	)
+}
+
+func waitForConnectionReady(conn *grpc.ClientConn) error {
+	const retries = 30
+
+	for i := 0; i < retries; i++ {
+		if conn.GetState() == connectivity.Ready {
+			return nil
+		}
+		time.Sleep(time.Second)
+	}
+
+	return errors.New(fmt.Sprintf("failed to wait service %s", conn.Target()))
 }
