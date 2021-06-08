@@ -66,6 +66,21 @@ func addToPlaylist(playlistServiceApi PlaylistServiceApi, contentServiceApi Cont
 		assertEqual(playlistServiceApi.RemoveFromPlaylist(playlistItemID, anotherUser), ErrOnlyOwnerCanManagePlaylist)
 
 		assertNoErr(playlistServiceApi.RemoveFromPlaylist(playlistItemID, user))
+
+		assertNoErr(playlistServiceApi.DeletePlaylist(playlistID, user))
+	}
+
+	{
+		playlistID, err := playlistServiceApi.CreatePlaylist("collection", user)
+		assertNoErr(err)
+
+		_, err = playlistServiceApi.AddToPlaylist(playlistID, publicContentID, user)
+		assertNoErr(err)
+
+		_, err = playlistServiceApi.AddToPlaylist(playlistID, publicContentID, user)
+		assertNoErr(err)
+
+		assertNoErr(playlistServiceApi.DeletePlaylist(playlistID, user))
 	}
 
 }
