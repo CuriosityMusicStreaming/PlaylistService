@@ -150,12 +150,17 @@ func (repo *playlistRepository) Remove(id domain.PlaylistID) error {
 		return errors.WithStack(err)
 	}
 
+	err = repo.removePlaylistItems(id)
+	if err != nil {
+		return err
+	}
+
 	_, err = repo.client.Exec(deleteSql, binaryUUID)
 	if err != nil {
 		return err
 	}
 
-	return repo.removePlaylistItems(id)
+	return nil
 }
 
 func (repo *playlistRepository) fetchPlaylistItems(id uuid.UUID) ([]sqlxPlaylistItem, error) {
