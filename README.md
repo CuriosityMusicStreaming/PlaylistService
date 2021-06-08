@@ -30,5 +30,5 @@ make check
 You can run integration-tests
 
 ```shell
-make build && ./bin/run-integraion-tests.sh
+make build publish && ./bin/run-integraion-tests.sh
 ```
