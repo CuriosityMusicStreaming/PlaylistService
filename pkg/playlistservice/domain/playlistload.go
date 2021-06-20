@@ -40,5 +40,4 @@ func mapItems(items []PlaylistItemData) map[PlaylistItemID]PlaylistItem {
 		}
 	}
 	return result
-
 }

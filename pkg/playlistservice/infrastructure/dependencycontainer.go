@@ -2,7 +2,7 @@ package infrastructure
 
 import (
 	commonauth "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
-	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
+	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
 	commonstoredevent "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
 	commonmysql "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 
@@ -27,7 +27,7 @@ type DependencyContainer interface {
 
 func NewDependencyContainer(
 	client commonmysql.TransactionalClient,
-	logger logger.Logger,
+	logger log.Logger,
 	contentServiceClient contentserviceapi.ContentServiceClient,
 	eventStore commonstoredevent.Store,
 	storedEventSenderCallback mysql.UnitOfWorkCompleteNotifier,
@@ -137,6 +137,6 @@ func contentChecker(contentServiceClient contentserviceapi.ContentServiceClient)
 	return infrastructureservice.NewContentChecker(contentServiceClient)
 }
 
-func integrationEventHandler(logger logger.Logger, container DependencyContainer) integrationevent.Handler {
+func integrationEventHandler(logger log.Logger, container DependencyContainer) integrationevent.Handler {
 	return integrationevent.NewIntegrationEventHandler(logger, container)
 }

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
+	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
 	"github.com/google/uuid"
 
 	"playlistservice/pkg/playlistservice/app/service"
@@ -18,7 +18,7 @@ type DependencyContainer interface {
 	PlaylistService() service.PlaylistService
 }
 
-func NewIntegrationEventHandler(logger logger.Logger, container DependencyContainer) Handler {
+func NewIntegrationEventHandler(logger log.Logger, container DependencyContainer) Handler {
 	return &integrationEventHandler{
 		logger:    logger,
 		container: container,
@@ -26,7 +26,7 @@ func NewIntegrationEventHandler(logger logger.Logger, container DependencyContai
 }
 
 type integrationEventHandler struct {
-	logger    logger.Logger
+	logger    log.Logger
 	container DependencyContainer
 }
 

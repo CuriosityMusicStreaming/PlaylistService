@@ -15,12 +15,12 @@ type UserContainer interface {
 	Clear()
 }
 
-func RunTests(playlistServiceApi PlaylistServiceApi, contentServiceApi ContentServiceApi, container UserContainer) {
-	playlistTests(playlistServiceApi, container)
-	playlistsContentTests(playlistServiceApi, contentServiceApi, container)
+func RunTests(playlistServiceAPI PlaylistServiceAPI, contentServiceAPI ContentServiceAPI, container UserContainer) {
+	playlistTests(playlistServiceAPI)
+	playlistsContentTests(playlistServiceAPI, contentServiceAPI, container)
 }
 
-type PlaylistServiceApi interface {
+type PlaylistServiceAPI interface {
 	CreatePlaylist(title string, userDescriptor auth.UserDescriptor) (string, error)
 	GetPlaylist(playlistID string, userDescriptor auth.UserDescriptor) (*playlistserviceapi.GetPlaylistResponse, error)
 	GetUserPlaylists(userDescriptor auth.UserDescriptor) (*playlistserviceapi.GetUserPlaylistsResponse, error)
@@ -31,7 +31,7 @@ type PlaylistServiceApi interface {
 	RemoveFromPlaylist(playlistItemID string, userDescriptor auth.UserDescriptor) error
 }
 
-type ContentServiceApi interface {
+type ContentServiceAPI interface {
 	AddContent(title string, contentType contentserviceapi.ContentType, availabilityType contentserviceapi.ContentAvailabilityType, userDescriptor auth.UserDescriptor) (*contentserviceapi.AddContentResponse, error)
 	GetAuthorContent(userDescriptor auth.UserDescriptor) (*contentserviceapi.GetAuthorContentResponse, error)
 	GetContentList(contentIDs []string) (*contentserviceapi.GetContentListResponse, error)

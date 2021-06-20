@@ -11,22 +11,22 @@ import (
 	"playlistservice/pkg/integrationtests/app"
 )
 
-func NewPlaylistServiceApi(
+func NewPlaylistServiceAPI(
 	client playlistserviceapi.PlayListServiceClient,
 	serializer auth.UserDescriptorSerializer,
-) app.PlaylistServiceApi {
-	return &playlistServiceApi{
+) app.PlaylistServiceAPI {
+	return &playlistServiceAPI{
 		client:     client,
 		serializer: serializer,
 	}
 }
 
-type playlistServiceApi struct {
+type playlistServiceAPI struct {
 	client     playlistserviceapi.PlayListServiceClient
 	serializer auth.UserDescriptorSerializer
 }
 
-func (api *playlistServiceApi) CreatePlaylist(title string, userDescriptor auth.UserDescriptor) (string, error) {
+func (api *playlistServiceAPI) CreatePlaylist(title string, userDescriptor auth.UserDescriptor) (string, error) {
 	userToken, err := api.serializer.Serialize(userDescriptor)
 	if err != nil {
 		panic(err)
@@ -43,7 +43,7 @@ func (api *playlistServiceApi) CreatePlaylist(title string, userDescriptor auth.
 	return resp.PlaylistID, nil
 }
 
-func (api *playlistServiceApi) GetPlaylist(playlistID string, userDescriptor auth.UserDescriptor) (*playlistserviceapi.GetPlaylistResponse, error) {
+func (api *playlistServiceAPI) GetPlaylist(playlistID string, userDescriptor auth.UserDescriptor) (*playlistserviceapi.GetPlaylistResponse, error) {
 	userToken, err := api.serializer.Serialize(userDescriptor)
 	if err != nil {
 		panic(err)
@@ -56,7 +56,7 @@ func (api *playlistServiceApi) GetPlaylist(playlistID string, userDescriptor aut
 	return response, api.transformError(err)
 }
 
-func (api *playlistServiceApi) GetUserPlaylists(userDescriptor auth.UserDescriptor) (*playlistserviceapi.GetUserPlaylistsResponse, error) {
+func (api *playlistServiceAPI) GetUserPlaylists(userDescriptor auth.UserDescriptor) (*playlistserviceapi.GetUserPlaylistsResponse, error) {
 	userToken, err := api.serializer.Serialize(userDescriptor)
 	if err != nil {
 		panic(err)
@@ -68,7 +68,8 @@ func (api *playlistServiceApi) GetUserPlaylists(userDescriptor auth.UserDescript
 	return response, api.transformError(err)
 }
 
-func (api *playlistServiceApi) SetPlaylistTitle(playlistID string, title string, userDescriptor auth.UserDescriptor) error {
+//nolint:gocritic
+func (api *playlistServiceAPI) SetPlaylistTitle(playlistID string, title string, userDescriptor auth.UserDescriptor) error {
 	userToken, err := api.serializer.Serialize(userDescriptor)
 	if err != nil {
 		panic(err)
@@ -83,7 +84,7 @@ func (api *playlistServiceApi) SetPlaylistTitle(playlistID string, title string,
 	return api.transformError(err)
 }
 
-func (api *playlistServiceApi) DeletePlaylist(playlistID string, userDescriptor auth.UserDescriptor) error {
+func (api *playlistServiceAPI) DeletePlaylist(playlistID string, userDescriptor auth.UserDescriptor) error {
 	userToken, err := api.serializer.Serialize(userDescriptor)
 	if err != nil {
 		panic(err)
@@ -96,7 +97,8 @@ func (api *playlistServiceApi) DeletePlaylist(playlistID string, userDescriptor 
 	return api.transformError(err)
 }
 
-func (api *playlistServiceApi) AddToPlaylist(playlistID string, contentID string, userDescriptor auth.UserDescriptor) (string, error) {
+//nolint:gocritic
+func (api *playlistServiceAPI) AddToPlaylist(playlistID string, contentID string, userDescriptor auth.UserDescriptor) (string, error) {
 	userToken, err := api.serializer.Serialize(userDescriptor)
 	if err != nil {
 		panic(err)
@@ -114,7 +116,7 @@ func (api *playlistServiceApi) AddToPlaylist(playlistID string, contentID string
 	return resp.PlaylistItemID, nil
 }
 
-func (api *playlistServiceApi) RemoveFromPlaylist(playlistItemID string, userDescriptor auth.UserDescriptor) error {
+func (api *playlistServiceAPI) RemoveFromPlaylist(playlistItemID string, userDescriptor auth.UserDescriptor) error {
 	userToken, err := api.serializer.Serialize(userDescriptor)
 	if err != nil {
 		panic(err)
@@ -128,7 +130,7 @@ func (api *playlistServiceApi) RemoveFromPlaylist(playlistItemID string, userDes
 	return api.transformError(err)
 }
 
-func (api *playlistServiceApi) transformError(err error) error {
+func (api *playlistServiceAPI) transformError(err error) error {
 	s, ok := status.FromError(err)
 	if ok {
 		switch s.Code() {
@@ -139,5 +141,4 @@ func (api *playlistServiceApi) transformError(err error) error {
 		}
 	}
 	return err
-
 }

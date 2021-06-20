@@ -16,22 +16,22 @@ type eventStore struct {
 }
 
 func (store *eventStore) Append(event storedevent.StoredEvent) error {
-	const insertSql = `INSERT INTO stored_event (stored_event_id, type, body, created_at) VALUES(?, ?, ?, now())`
+	const insertSQL = `INSERT INTO stored_event (stored_event_id, type, body, created_at) VALUES(?, ?, ?, now())`
 	binaryID, err := uuid.UUID(event.ID).MarshalBinary()
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	_, err = store.client.Exec(insertSql, binaryID, event.Type, event.Body)
+	_, err = store.client.Exec(insertSQL, binaryID, event.Type, event.Body)
 	return errors.WithStack(err)
 }
 
 func (store *eventStore) GetAllAfter(id *storedevent.ID) ([]storedevent.StoredEvent, error) {
-	selectSql := `SELECT stored_event_id, type, body FROM stored_event`
+	selectSQL := `SELECT stored_event_id, type, body FROM stored_event`
 	var args []interface{}
 
 	if id != nil {
-		selectSql += " WHERE created_at > (SELECT created_at FROM stored_event WHERE stored_event_id = ?)"
+		selectSQL += " WHERE created_at > (SELECT created_at FROM stored_event WHERE stored_event_id = ?)"
 		binaryID, err := uuid.UUID(*id).MarshalBinary()
 		if err != nil {
 			return nil, errors.WithStack(err)
@@ -39,11 +39,11 @@ func (store *eventStore) GetAllAfter(id *storedevent.ID) ([]storedevent.StoredEv
 		args = append(args, binaryID)
 	}
 
-	selectSql += " ORDER BY created_at"
+	selectSQL += " ORDER BY created_at"
 
 	var storedEvents []sqlxStoredEvent
 
-	err := store.client.Select(&storedEvents, selectSql, args...)
+	err := store.client.Select(&storedEvents, selectSQL, args...)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

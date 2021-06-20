@@ -60,17 +60,20 @@ func runService(config *config, logger log.MainLogger) error {
 	}
 
 	contentServiceClient, err := initContentServiceClient(opts, config)
+	if err != nil {
+		return err
+	}
 
 	logger.Info("Start tests")
 
 	userDescriptorSerializer := auth.NewUserDescriptorSerializer()
 
 	app.RunTests(
-		infrastructure.NewPlaylistServiceApi(
+		infrastructure.NewPlaylistServiceAPI(
 			playlistServiceClient,
 			userDescriptorSerializer,
 		),
-		infrastructure.NewContentServiceApi(
+		infrastructure.NewContentServiceAPI(
 			contentServiceClient,
 			userDescriptorSerializer,
 		),

@@ -33,7 +33,7 @@ func (repo *playlistRepository) NewPlaylistItemID() domain.PlaylistItemID {
 }
 
 func (repo *playlistRepository) Find(id domain.PlaylistID) (domain.Playlist, error) {
-	const selectSql = `SELECT * from playlist WHERE playlist_id = ?`
+	const selectSQL = `SELECT * from playlist WHERE playlist_id = ?`
 
 	binaryUUID, err := uuid.UUID(id).MarshalBinary()
 	if err != nil {
@@ -42,7 +42,7 @@ func (repo *playlistRepository) Find(id domain.PlaylistID) (domain.Playlist, err
 
 	var playlist sqlxPlaylist
 
-	err = repo.client.Get(&playlist, selectSql, binaryUUID)
+	err = repo.client.Get(&playlist, selectSQL, binaryUUID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return domain.Playlist{}, domain.ErrPlaylistNotFound
@@ -65,8 +65,8 @@ func (repo *playlistRepository) Find(id domain.PlaylistID) (domain.Playlist, err
 	}), nil
 }
 
-func (repo *playlistRepository) FindByItemID(playlistItemId domain.PlaylistItemID) (domain.Playlist, error) {
-	const selectSql = `
+func (repo *playlistRepository) FindByItemID(playlistItemID domain.PlaylistItemID) (domain.Playlist, error) {
+	const selectSQL = `
 		SELECT 
 			p.playlist_id AS playlist_id, 
 			p.name AS name, 
@@ -79,14 +79,14 @@ func (repo *playlistRepository) FindByItemID(playlistItemId domain.PlaylistItemI
 		WHERE pi.playlist_item_id = ?
 	`
 
-	binaryUUID, err := uuid.UUID(playlistItemId).MarshalBinary()
+	binaryUUID, err := uuid.UUID(playlistItemID).MarshalBinary()
 	if err != nil {
 		return domain.Playlist{}, err
 	}
 
 	var playlist sqlxPlaylist
 
-	err = repo.client.Get(&playlist, selectSql, binaryUUID)
+	err = repo.client.Get(&playlist, selectSQL, binaryUUID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return domain.Playlist{}, domain.ErrPlaylistByItemNotFound
@@ -110,7 +110,7 @@ func (repo *playlistRepository) FindByItemID(playlistItemId domain.PlaylistItemI
 }
 
 func (repo *playlistRepository) Store(playlist domain.Playlist) error {
-	const insertSql = `
+	const insertSQL = `
 		INSERT INTO playlist (playlist_id, name, owner_id, created_at, updated_at) VALUES(?, ?, ?, ?, ?)
 		ON DUPLICATE KEY 
 		UPDATE playlist_id=VALUES(playlist_id), name=VALUES(name), owner_id=VALUES(owner_id), created_at=VALUES(created_at), updated_at=VALUES(updated_at)
@@ -126,7 +126,7 @@ func (repo *playlistRepository) Store(playlist domain.Playlist) error {
 		return errors.WithStack(err)
 	}
 
-	_, err = repo.client.Exec(insertSql, binaryUUID, playlist.Name(), ownerID, playlist.CreatedAt(), playlist.UpdatedAt())
+	_, err = repo.client.Exec(insertSQL, binaryUUID, playlist.Name(), ownerID, playlist.CreatedAt(), playlist.UpdatedAt())
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -145,7 +145,7 @@ func (repo *playlistRepository) Store(playlist domain.Playlist) error {
 }
 
 func (repo *playlistRepository) Remove(id domain.PlaylistID) error {
-	const deleteSql = `DELETE FROM playlist WHERE playlist_id = ?`
+	const deleteSQL = `DELETE FROM playlist WHERE playlist_id = ?`
 
 	binaryUUID, err := uuid.UUID(id).MarshalBinary()
 	if err != nil {
@@ -157,7 +157,7 @@ func (repo *playlistRepository) Remove(id domain.PlaylistID) error {
 		return err
 	}
 
-	_, err = repo.client.Exec(deleteSql, binaryUUID)
+	_, err = repo.client.Exec(deleteSQL, binaryUUID)
 	if err != nil {
 		return err
 	}
@@ -166,7 +166,7 @@ func (repo *playlistRepository) Remove(id domain.PlaylistID) error {
 }
 
 func (repo *playlistRepository) fetchPlaylistItems(id uuid.UUID) ([]sqlxPlaylistItem, error) {
-	const selectSql = `SELECT playlist_item_id, content_id, created_at from playlist_item WHERE playlist_id = ?`
+	const selectSQL = `SELECT playlist_item_id, content_id, created_at from playlist_item WHERE playlist_id = ?`
 
 	binaryUUID, err := id.MarshalBinary()
 	if err != nil {
@@ -175,7 +175,7 @@ func (repo *playlistRepository) fetchPlaylistItems(id uuid.UUID) ([]sqlxPlaylist
 
 	var playlistItems []sqlxPlaylistItem
 
-	err = repo.client.Select(&playlistItems, selectSql, binaryUUID)
+	err = repo.client.Select(&playlistItems, selectSQL, binaryUUID)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -183,12 +183,13 @@ func (repo *playlistRepository) fetchPlaylistItems(id uuid.UUID) ([]sqlxPlaylist
 	return playlistItems, nil
 }
 
+//nolint
 func (repo *playlistRepository) storePlaylistItems(playlistID domain.PlaylistID, items map[domain.PlaylistItemID]domain.PlaylistItem) error {
 	if len(items) == 0 {
 		return nil
 	}
 
-	const insertSql = `
+	const insertSQL = `
 		INSERT INTO playlist_item (playlist_item_id, playlist_id, content_id, created_at) VALUES %s
 		ON DUPLICATE KEY 
 		UPDATE playlist_item_id=VALUES(playlist_item_id), playlist_id=VALUES(playlist_id), content_id=VALUES(content_id), created_at=VALUES(created_at)
@@ -221,12 +222,12 @@ func (repo *playlistRepository) storePlaylistItems(playlistID domain.PlaylistID,
 		values = append(values, "(?, ?, ?, ?)")
 	}
 
-	_, err := repo.client.Exec(fmt.Sprintf(insertSql, strings.Join(values, ", ")), args...)
+	_, err := repo.client.Exec(fmt.Sprintf(insertSQL, strings.Join(values, ", ")), args...)
 	return errors.WithStack(err)
 }
 
 func (repo *playlistRepository) removeDeletedItems(playlistID domain.PlaylistID, items map[domain.PlaylistItemID]domain.PlaylistItem) error {
-	deleteSql := `DELETE FROM playlist_item WHERE playlist_id = ?`
+	deleteSQL := `DELETE FROM playlist_item WHERE playlist_id = ?`
 
 	binaryPlaylistID, err := uuid.UUID(playlistID).MarshalBinary()
 	if err != nil {
@@ -250,23 +251,23 @@ func (repo *playlistRepository) removeDeletedItems(playlistID domain.PlaylistID,
 			return err2
 		}
 
-		deleteSql += " " + query
+		deleteSQL += " " + query
 		args = append(args, params...)
 	}
 
-	_, err = repo.client.Exec(deleteSql, args...)
+	_, err = repo.client.Exec(deleteSQL, args...)
 	return err
 }
 
 func (repo playlistRepository) removePlaylistItems(playlistID domain.PlaylistID) error {
-	const deleteSql = `DELETE FROM playlist_item WHERE playlist_id = ?`
+	const deleteSQL = `DELETE FROM playlist_item WHERE playlist_id = ?`
 
 	id, err := uuid.UUID(playlistID).MarshalBinary()
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	_, err = repo.client.Exec(deleteSql, id)
+	_, err = repo.client.Exec(deleteSQL, id)
 	return err
 }
 

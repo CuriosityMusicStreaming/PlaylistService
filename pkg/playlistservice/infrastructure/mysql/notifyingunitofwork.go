@@ -6,7 +6,7 @@ import (
 
 type UnitOfWorkCompleteNotifier func()
 
-func NewNotifyingUnitOfWorkFactory(factory service.UnitOfWorkFactory, completeNotifier UnitOfWorkCompleteNotifier) *notifyingUnitOfWorkFactoryDecorator {
+func NewNotifyingUnitOfWorkFactory(factory service.UnitOfWorkFactory, completeNotifier UnitOfWorkCompleteNotifier) service.UnitOfWorkFactory {
 	return &notifyingUnitOfWorkFactoryDecorator{
 		factory:          factory,
 		completeNotifier: completeNotifier,

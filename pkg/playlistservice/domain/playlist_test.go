@@ -7,6 +7,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	playlistName = "magic"
+)
+
 func TestPlaylistService_CreatePlaylist(t *testing.T) {
 	playlistRepo := newMockPlaylistRepo()
 	eventDispatcher := newMockEventDispatcher()
@@ -14,7 +18,7 @@ func TestPlaylistService_CreatePlaylist(t *testing.T) {
 	playlistService := NewPlaylistService(playlistRepo, eventDispatcher)
 
 	{
-		newPlaylistName := "magic"
+		newPlaylistName := playlistName
 		playlistOwner := PlaylistOwnerID(uuid.New())
 
 		playlistID, err := playlistService.CreatePlaylist(newPlaylistName, playlistOwner)
@@ -41,13 +45,13 @@ func TestPlaylistService_SetPlaylistName(t *testing.T) {
 	playlistService := NewPlaylistService(playlistRepo, eventDispatcher)
 
 	{
-		playlistName := "magic"
+		playlistName := playlistName
 		playlistOwner := PlaylistOwnerID(uuid.New())
 
 		playlistID, err := playlistService.CreatePlaylist(playlistName, playlistOwner)
 		assert.NoError(t, err)
 
-		newPlaylistName := "new-magic"
+		newPlaylistName := "new-" + playlistName
 		err = playlistService.SetPlaylistName(playlistID, playlistOwner, newPlaylistName)
 		assert.NoError(t, err)
 
@@ -66,14 +70,14 @@ func TestPlaylistService_SetPlaylistName(t *testing.T) {
 	}
 
 	{
-		playlistName := "magic"
+		playlistName := playlistName
 		playlistOwner := PlaylistOwnerID(uuid.New())
 		anotherPlaylistOwner := PlaylistOwnerID(uuid.New())
 
 		playlistID, err := playlistService.CreatePlaylist(playlistName, playlistOwner)
 		assert.NoError(t, err)
 
-		newPlaylistName := "new-magic"
+		newPlaylistName := "new-" + playlistName
 		err = playlistService.SetPlaylistName(playlistID, anotherPlaylistOwner, newPlaylistName)
 		assert.EqualError(t, err, ErrOnlyOwnerCanManagePlaylist.Error())
 
@@ -91,20 +95,20 @@ func TestPlaylistService_AddToPlaylist(t *testing.T) {
 	playlistService := NewPlaylistService(playlistRepo, eventDispatcher)
 
 	{
-		playlistName := "magic"
+		playlistName := playlistName
 		playlistOwner := PlaylistOwnerID(uuid.New())
 		content := ContentID(uuid.New())
 
 		playlistID, err := playlistService.CreatePlaylist(playlistName, playlistOwner)
 		assert.NoError(t, err)
 
-		playlistItemId, err := playlistService.AddToPlaylist(playlistID, playlistOwner, content)
+		playlistItemID, err := playlistService.AddToPlaylist(playlistID, playlistOwner, content)
 		assert.NoError(t, err)
 
 		playlist, ok := playlistRepo.playlists[playlistID]
 		assert.Equal(t, true, ok)
 
-		playlistItem, ok := playlist.Items()[playlistItemId]
+		playlistItem, ok := playlist.Items()[playlistItemID]
 		assert.Equal(t, true, ok)
 
 		assert.Equal(t, content, playlistItem.ContentID())
@@ -122,7 +126,7 @@ func TestPlaylistService_AddToPlaylist(t *testing.T) {
 		playlistRepo = newMockPlaylistRepo()
 		playlistService = NewPlaylistService(playlistRepo, eventDispatcher)
 
-		playlistName := "magic"
+		playlistName := playlistName
 		playlistOwner := PlaylistOwnerID(uuid.New())
 		content1 := ContentID(uuid.New())
 		content2 := ContentID(uuid.New())
@@ -131,25 +135,25 @@ func TestPlaylistService_AddToPlaylist(t *testing.T) {
 		playlistID, err := playlistService.CreatePlaylist(playlistName, playlistOwner)
 		assert.NoError(t, err)
 
-		playlistItemId1, err := playlistService.AddToPlaylist(playlistID, playlistOwner, content1)
+		playlistItemID1, err := playlistService.AddToPlaylist(playlistID, playlistOwner, content1)
 		assert.NoError(t, err)
 
-		playlistItemId2, err := playlistService.AddToPlaylist(playlistID, playlistOwner, content2)
+		playlistItemID2, err := playlistService.AddToPlaylist(playlistID, playlistOwner, content2)
 		assert.NoError(t, err)
 
-		playlistItemId3, err := playlistService.AddToPlaylist(playlistID, playlistOwner, content3)
+		playlistItemID3, err := playlistService.AddToPlaylist(playlistID, playlistOwner, content3)
 		assert.NoError(t, err)
 
 		playlist, ok := playlistRepo.playlists[playlistID]
 		assert.Equal(t, true, ok)
 
-		playlistItem1, ok := playlist.Items()[playlistItemId1]
+		playlistItem1, ok := playlist.Items()[playlistItemID1]
 		assert.Equal(t, true, ok)
 
-		playlistItem2, ok := playlist.Items()[playlistItemId2]
+		playlistItem2, ok := playlist.Items()[playlistItemID2]
 		assert.Equal(t, true, ok)
 
-		playlistItem3, ok := playlist.Items()[playlistItemId3]
+		playlistItem3, ok := playlist.Items()[playlistItemID3]
 		assert.Equal(t, true, ok)
 
 		assert.Equal(t, content1, playlistItem1.contentID)
@@ -165,7 +169,7 @@ func TestPlaylistService_RemoveFromPlaylist(t *testing.T) {
 	playlistService := NewPlaylistService(playlistRepo, eventDispatcher)
 
 	{
-		playlistName := "magic"
+		playlistName := playlistName
 		playlistOwner := PlaylistOwnerID(uuid.New())
 		anotherPlaylistOwner := PlaylistOwnerID(uuid.New())
 		content := ContentID(uuid.New())
@@ -173,13 +177,13 @@ func TestPlaylistService_RemoveFromPlaylist(t *testing.T) {
 		playlistID, err := playlistService.CreatePlaylist(playlistName, playlistOwner)
 		assert.NoError(t, err)
 
-		playlistItemId, err := playlistService.AddToPlaylist(playlistID, playlistOwner, content)
+		playlistItemID, err := playlistService.AddToPlaylist(playlistID, playlistOwner, content)
 		assert.NoError(t, err)
 
-		err = playlistService.RemoveFromPlaylist(playlistItemId, anotherPlaylistOwner)
+		err = playlistService.RemoveFromPlaylist(playlistItemID, anotherPlaylistOwner)
 		assert.EqualError(t, err, ErrOnlyOwnerCanManagePlaylist.Error())
 
-		err = playlistService.RemoveFromPlaylist(playlistItemId, playlistOwner)
+		err = playlistService.RemoveFromPlaylist(playlistItemID, playlistOwner)
 		assert.NoError(t, err)
 
 		assert.Equal(t, len(eventDispatcher.events), 3)
@@ -194,7 +198,7 @@ func TestPlaylistService_RemovePlaylist(t *testing.T) {
 	playlistService := NewPlaylistService(playlistRepo, eventDispatcher)
 
 	{
-		playlistName := "magic"
+		playlistName := playlistName
 		playlistOwner := PlaylistOwnerID(uuid.New())
 		anotherPlaylistOwner := PlaylistOwnerID(uuid.New())
 
@@ -241,10 +245,10 @@ func (m *mockPlaylistRepository) Find(id PlaylistID) (Playlist, error) {
 	return playlist, nil
 }
 
-func (m *mockPlaylistRepository) FindByItemID(playlistItemId PlaylistItemID) (Playlist, error) {
+func (m *mockPlaylistRepository) FindByItemID(playlistItemID PlaylistItemID) (Playlist, error) {
 	for _, playlist := range m.playlists {
 		for id := range playlist.Items() {
-			if id == playlistItemId {
+			if id == playlistItemID {
 				return playlist, nil
 			}
 		}

@@ -69,7 +69,12 @@ func runService(config *config, logger log.MainLogger) error {
 	if err != nil {
 		return err
 	}
-	defer connector.Close()
+	defer func() {
+		closeConnectorErr := connector.Close()
+		if err != nil {
+			logger.FatalError(closeConnectorErr)
+		}
+	}()
 
 	amqpConnection := amqp.NewAMQPConnection(&amqp.Config{
 		User:     config.AMQPUser,
@@ -116,13 +121,18 @@ func runService(config *config, logger log.MainLogger) error {
 	if err != nil {
 		return err
 	}
-	defer amqpConnection.Stop()
+	defer func() {
+		closeAMQPConnectionErr := amqpConnection.Stop()
+		if closeAMQPConnectionErr != nil {
+			logger.FatalError(closeAMQPConnectionErr)
+		}
+	}()
 
-	serviceApi := transport.NewPlaylistServiceServer(container)
+	serviceAPI := transport.NewPlaylistServiceServer(container)
 	serverHub := server.NewHub(stopChan)
 
 	baseServer := grpc.NewServer(grpc.UnaryInterceptor(makeGRPCUnaryInterceptor(logger)))
-	playlistservice.RegisterPlayListServiceServer(baseServer, serviceApi)
+	playlistservice.RegisterPlayListServiceServer(baseServer, serviceAPI)
 
 	serverHub.AddServer(server.NewGrpcServer(
 		baseServer,

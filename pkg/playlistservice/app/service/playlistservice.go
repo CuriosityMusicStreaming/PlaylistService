@@ -73,14 +73,14 @@ func (service *playlistService) AddToPlaylist(id uuid.UUID, userDescriptor auth.
 
 	var playlistItemID domain.PlaylistItemID
 	err = service.executeInUnitOfWorkWithServiceLock(func(provider RepositoryProvider) error {
-		var err error
+		var err2 error
 
-		playlistItemID, err = service.domainPlaylistService(provider).AddToPlaylist(
+		playlistItemID, err2 = service.domainPlaylistService(provider).AddToPlaylist(
 			domain.PlaylistID(id),
 			domain.PlaylistOwnerID(userDescriptor.UserID),
 			domain.ContentID(contentID),
 		)
-		return err
+		return err2
 	})
 
 	return uuid.UUID(playlistItemID), err
@@ -126,12 +126,4 @@ func (service playlistService) executeInUnitOfWork(lockName string, f func(provi
 
 func (service *playlistService) domainPlaylistService(provider RepositoryProvider) domain.PlaylistService {
 	return domain.NewPlaylistService(provider.PlaylistRepository(), service.eventDispatcher)
-}
-
-func uuidsToContentIDs(ids []uuid.UUID) []domain.ContentID {
-	result := make([]domain.ContentID, 0, len(ids))
-	for _, id := range ids {
-		result = append(result, domain.ContentID(id))
-	}
-	return result
 }

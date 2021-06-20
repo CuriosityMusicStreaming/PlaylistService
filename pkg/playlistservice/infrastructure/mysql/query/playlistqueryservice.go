@@ -22,19 +22,19 @@ type playlistQueryService struct {
 }
 
 func (service *playlistQueryService) GetPlaylists(spec query.PlaylistSpecification) ([]query.PlaylistView, error) {
-	selectSql := `SELECT * FROM playlist`
+	selectSQL := `SELECT * FROM playlist`
 
 	conditions, args, err := getWhereConditionsBySpec(spec)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 	if conditions != "" {
-		selectSql += fmt.Sprintf(` WHERE %s`, conditions)
+		selectSQL += fmt.Sprintf(` WHERE %s`, conditions)
 	}
 
 	var playlists []sqlxPlaylistView
 
-	err = service.client.Select(&playlists, selectSql, args...)
+	err = service.client.Select(&playlists, selectSQL, args...)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -111,6 +111,7 @@ func (service *playlistQueryService) getPlaylistsItems(playlistIDs []uuid.UUID) 
 	return playlistItems, err
 }
 
+//nolint
 func getWhereConditionsBySpec(spec query.PlaylistSpecification) (string, []interface{}, error) {
 	var conditions []string
 	var params []interface{}

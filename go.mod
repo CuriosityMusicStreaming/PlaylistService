@@ -3,7 +3,7 @@ module playlistservice
 go 1.16
 
 require (
-	github.com/CuriosityMusicStreaming/ComponentsPool v1.0.8-0.20210530175641-848755b2f0b1
+	github.com/CuriosityMusicStreaming/ComponentsPool v1.0.8
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.8.0

@@ -11,16 +11,19 @@ import (
 	"playlistservice/pkg/integrationtests/app"
 )
 
-func NewContentServiceApi(client contentserviceapi.ContentServiceClient, serializer auth.UserDescriptorSerializer) *contentServiceApi {
-	return &contentServiceApi{client: client, serializer: serializer}
+func NewContentServiceAPI(
+	client contentserviceapi.ContentServiceClient,
+	serializer auth.UserDescriptorSerializer,
+) app.ContentServiceAPI {
+	return &contentServiceAPI{client: client, serializer: serializer}
 }
 
-type contentServiceApi struct {
+type contentServiceAPI struct {
 	client     contentserviceapi.ContentServiceClient
 	serializer auth.UserDescriptorSerializer
 }
 
-func (api *contentServiceApi) AddContent(
+func (api *contentServiceAPI) AddContent(
 	title string,
 	contentType contentserviceapi.ContentType,
 	availabilityType contentserviceapi.ContentAvailabilityType,
@@ -40,7 +43,7 @@ func (api *contentServiceApi) AddContent(
 	return resp, api.transformError(err)
 }
 
-func (api *contentServiceApi) GetAuthorContent(userDescriptor auth.UserDescriptor) (*contentserviceapi.GetAuthorContentResponse, error) {
+func (api *contentServiceAPI) GetAuthorContent(userDescriptor auth.UserDescriptor) (*contentserviceapi.GetAuthorContentResponse, error) {
 	userToken, err := api.serializer.Serialize(userDescriptor)
 	if err != nil {
 		panic(err)
@@ -52,13 +55,13 @@ func (api *contentServiceApi) GetAuthorContent(userDescriptor auth.UserDescripto
 	return resp, api.transformError(err)
 }
 
-func (api *contentServiceApi) GetContentList(contentIDs []string) (*contentserviceapi.GetContentListResponse, error) {
+func (api *contentServiceAPI) GetContentList(contentIDs []string) (*contentserviceapi.GetContentListResponse, error) {
 	return api.client.GetContentList(context.Background(), &contentserviceapi.GetContentListRequest{
 		ContentIDs: contentIDs,
 	})
 }
 
-func (api *contentServiceApi) DeleteContent(userDescriptor auth.UserDescriptor, contentID string) error {
+func (api *contentServiceAPI) DeleteContent(userDescriptor auth.UserDescriptor, contentID string) error {
 	userToken, err := api.serializer.Serialize(userDescriptor)
 	if err != nil {
 		panic(err)
@@ -71,7 +74,7 @@ func (api *contentServiceApi) DeleteContent(userDescriptor auth.UserDescriptor, 
 	return api.transformError(err)
 }
 
-func (api *contentServiceApi) SetContentAvailabilityType(
+func (api *contentServiceAPI) SetContentAvailabilityType(
 	userDescriptor auth.UserDescriptor,
 	contentID string,
 	contentAvailabilityType contentserviceapi.ContentAvailabilityType,
@@ -89,7 +92,7 @@ func (api *contentServiceApi) SetContentAvailabilityType(
 	return api.transformError(err)
 }
 
-func (api *contentServiceApi) transformError(err error) error {
+func (api *contentServiceAPI) transformError(err error) error {
 	s, ok := status.FromError(err)
 	if ok {
 		switch s.Code() {

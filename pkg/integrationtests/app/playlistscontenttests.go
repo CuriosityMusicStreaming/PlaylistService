@@ -7,11 +7,11 @@ import (
 	"github.com/google/uuid"
 )
 
-func playlistsContentTests(playlistServiceApi PlaylistServiceApi, contentServiceApi ContentServiceApi, container UserContainer) {
-	addToPlaylist(playlistServiceApi, contentServiceApi, container)
+func playlistsContentTests(playlistServiceAPI PlaylistServiceAPI, contentServiceAPI ContentServiceAPI, container UserContainer) {
+	addToPlaylist(playlistServiceAPI, contentServiceAPI, container)
 }
 
-func addToPlaylist(playlistServiceApi PlaylistServiceApi, contentServiceApi ContentServiceApi, container UserContainer) {
+func addToPlaylist(playlistServiceAPI PlaylistServiceAPI, contentServiceAPI ContentServiceAPI, container UserContainer) {
 	user := auth.UserDescriptor{UserID: uuid.New()}
 	anotherUser := auth.UserDescriptor{UserID: uuid.New()}
 	author := auth.UserDescriptor{UserID: uuid.New()}
@@ -22,7 +22,7 @@ func addToPlaylist(playlistServiceApi PlaylistServiceApi, contentServiceApi Cont
 	var publicContentID string
 	var privateContentID string
 
-	resp, err := contentServiceApi.AddContent(
+	resp, err := contentServiceAPI.AddContent(
 		"new song",
 		contentserviceapi.ContentType_Song,
 		contentserviceapi.ContentAvailabilityType_Public,
@@ -32,7 +32,7 @@ func addToPlaylist(playlistServiceApi PlaylistServiceApi, contentServiceApi Cont
 
 	publicContentID = resp.ContentID
 
-	resp, err = contentServiceApi.AddContent(
+	resp, err = contentServiceAPI.AddContent(
 		"new patreon podcast",
 		contentserviceapi.ContentType_Podcast,
 		contentserviceapi.ContentAvailabilityType_Private,
@@ -43,45 +43,44 @@ func addToPlaylist(playlistServiceApi PlaylistServiceApi, contentServiceApi Cont
 	privateContentID = resp.ContentID
 
 	{
-		playlistID, err := playlistServiceApi.CreatePlaylist("collection", user)
+		playlistID, err := playlistServiceAPI.CreatePlaylist("collection", user)
 		assertNoErr(err)
 
-		playlistItemID, err := playlistServiceApi.AddToPlaylist(playlistID, publicContentID, user)
+		playlistItemID, err := playlistServiceAPI.AddToPlaylist(playlistID, publicContentID, user)
 		assertNoErr(err)
 
-		playlistResp, err := playlistServiceApi.GetPlaylist(playlistID, user)
+		playlistResp, err := playlistServiceAPI.GetPlaylist(playlistID, user)
 		assertNoErr(err)
 
 		assertEqual(1, len(playlistResp.PlaylistItems))
 		assertEqual(playlistItemID, playlistResp.PlaylistItems[0].PlaylistItemID)
 		assertEqual(publicContentID, playlistResp.PlaylistItems[0].ContentID)
 
-		_, err = playlistServiceApi.AddToPlaylist(playlistID, privateContentID, user)
+		_, err = playlistServiceAPI.AddToPlaylist(playlistID, privateContentID, user)
 		assertEqual(err, ErrContentNotFound)
 
-		playlistResp, err = playlistServiceApi.GetPlaylist(playlistID, user)
+		playlistResp, err = playlistServiceAPI.GetPlaylist(playlistID, user)
 		assertNoErr(err)
 
 		assertEqual(1, len(playlistResp.PlaylistItems))
 
-		assertEqual(playlistServiceApi.RemoveFromPlaylist(playlistItemID, anotherUser), ErrOnlyOwnerCanManagePlaylist)
+		assertEqual(playlistServiceAPI.RemoveFromPlaylist(playlistItemID, anotherUser), ErrOnlyOwnerCanManagePlaylist)
 
-		assertNoErr(playlistServiceApi.RemoveFromPlaylist(playlistItemID, user))
+		assertNoErr(playlistServiceAPI.RemoveFromPlaylist(playlistItemID, user))
 
-		assertNoErr(playlistServiceApi.DeletePlaylist(playlistID, user))
+		assertNoErr(playlistServiceAPI.DeletePlaylist(playlistID, user))
 	}
 
 	{
-		playlistID, err := playlistServiceApi.CreatePlaylist("collection", user)
+		playlistID, err := playlistServiceAPI.CreatePlaylist("collection", user)
 		assertNoErr(err)
 
-		_, err = playlistServiceApi.AddToPlaylist(playlistID, publicContentID, user)
+		_, err = playlistServiceAPI.AddToPlaylist(playlistID, publicContentID, user)
 		assertNoErr(err)
 
-		_, err = playlistServiceApi.AddToPlaylist(playlistID, publicContentID, user)
+		_, err = playlistServiceAPI.AddToPlaylist(playlistID, publicContentID, user)
 		assertNoErr(err)
 
-		assertNoErr(playlistServiceApi.DeletePlaylist(playlistID, user))
+		assertNoErr(playlistServiceAPI.DeletePlaylist(playlistID, user))
 	}
-
 }

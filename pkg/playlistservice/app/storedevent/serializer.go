@@ -43,6 +43,7 @@ func serializeAsJSON(event commondomain.Event) ([]byte, error) {
 	return json.Marshal(serializeEvent(event))
 }
 
+//nolint
 func serializeEvent(event commondomain.Event) (eventPayload interface{}) {
 	switch currEvent := event.(type) {
 	case domain.PlaylistCreated:

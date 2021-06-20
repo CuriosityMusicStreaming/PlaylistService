@@ -132,7 +132,7 @@ type PlaylistRepository interface {
 	NewID() PlaylistID
 	NewPlaylistItemID() PlaylistItemID
 	Find(id PlaylistID) (Playlist, error)
-	FindByItemID(playlistItemId PlaylistItemID) (Playlist, error)
+	FindByItemID(playlistItemID PlaylistItemID) (Playlist, error)
 	Store(playlist Playlist) error
 	Remove(id PlaylistID) error
 }

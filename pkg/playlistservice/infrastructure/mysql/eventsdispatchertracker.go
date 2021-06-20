@@ -39,7 +39,7 @@ func (tracker *eventsDispatchTracker) TrackLastID(transportName string, id store
 	return err
 }
 
-func (tracker *eventsDispatchTracker) LastId(transportName string) (*storedevent.ID, error) {
+func (tracker *eventsDispatchTracker) LastID(transportName string) (*storedevent.ID, error) {
 	const selectQuery = `SELECT last_stored_event_id FROM tracked_stored_event WHERE transport_name = ?`
 
 	var id uuid.UUID
@@ -47,9 +47,9 @@ func (tracker *eventsDispatchTracker) LastId(transportName string) (*storedevent
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
-		} else {
-			return nil, err
 		}
+
+		return nil, err
 	}
 
 	ID := storedevent.ID(id)
