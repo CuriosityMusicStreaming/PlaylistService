@@ -3,21 +3,26 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
+	stdlog "log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/amqp"
 	jsonlog "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/logger"
 	commonmysql "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/server"
+	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
-	"io"
-	stdlog "log"
-	"net/http"
-	"os"
-	"os/signal"
+
 	contentserviceapi "playlistservice/api/contentservice"
 	"playlistservice/api/playlistservice"
 	migrationsembedder "playlistservice/data/mysql"
@@ -25,10 +30,6 @@ import (
 	"playlistservice/pkg/playlistservice/infrastructure/integrationevent"
 	"playlistservice/pkg/playlistservice/infrastructure/mysql"
 	"playlistservice/pkg/playlistservice/infrastructure/transport"
-	"syscall"
-	"time"
-
-	"github.com/gorilla/mux"
 )
 
 var appID = "UNKNOWN"

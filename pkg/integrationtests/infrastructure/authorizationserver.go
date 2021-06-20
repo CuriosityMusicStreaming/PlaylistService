@@ -4,6 +4,7 @@ import (
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
+
 	"playlistservice/api/authorizationservice"
 )
 

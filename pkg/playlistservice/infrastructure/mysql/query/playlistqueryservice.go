@@ -2,13 +2,15 @@ package query
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
+
 	"playlistservice/pkg/playlistservice/app/query"
-	"strings"
-	"time"
 )
 
 func NewPlaylistQueryService(client mysql.Client) query.PlaylistQueryService {

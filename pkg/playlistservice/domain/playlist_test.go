@@ -1,9 +1,10 @@
 package domain
 
 import (
+	"testing"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestPlaylistService_CreatePlaylist(t *testing.T) {

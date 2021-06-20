@@ -3,13 +3,15 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
+
 	"playlistservice/pkg/playlistservice/domain"
-	"strings"
-	"time"
 )
 
 func NewPlaylistRepository(client mysql.Client) domain.PlaylistRepository {

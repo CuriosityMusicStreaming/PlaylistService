@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	"github.com/google/uuid"
+
 	"playlistservice/pkg/playlistservice/domain"
 )
 

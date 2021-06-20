@@ -2,9 +2,11 @@ package storedevent
 
 import (
 	"encoding/json"
+
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
 	commondomain "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/domain"
 	"github.com/google/uuid"
+
 	"playlistservice/pkg/playlistservice/domain"
 )
 

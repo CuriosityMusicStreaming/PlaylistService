@@ -3,11 +3,12 @@ package transport
 import (
 	"context"
 	"fmt"
-	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
-	"google.golang.org/grpc"
 	"net/http"
 	"strings"
 	"time"
+
+	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
+	"google.golang.org/grpc"
 )
 
 func NewLoggingMiddleware(h http.Handler, logger log.Logger) http.Handler {

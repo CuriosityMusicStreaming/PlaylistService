@@ -2,9 +2,11 @@ package infrastructure
 
 import (
 	"context"
+
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
 	contentserviceapi "playlistservice/api/contentservice"
 	"playlistservice/pkg/integrationtests/app"
 )

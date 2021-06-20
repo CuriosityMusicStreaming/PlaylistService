@@ -5,6 +5,7 @@ import (
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
 	commonstoredevent "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
 	commonmysql "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
+
 	contentserviceapi "playlistservice/api/contentservice"
 	"playlistservice/pkg/playlistservice/app/query"
 	"playlistservice/pkg/playlistservice/app/service"

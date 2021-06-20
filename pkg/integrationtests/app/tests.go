@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	"github.com/pkg/errors"
+
 	contentserviceapi "playlistservice/api/contentservice"
 	playlistserviceapi "playlistservice/api/playlistservice"
 )

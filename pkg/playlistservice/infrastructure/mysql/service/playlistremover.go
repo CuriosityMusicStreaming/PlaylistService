@@ -4,6 +4,7 @@ import (
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+
 	"playlistservice/pkg/playlistservice/app/service"
 )
 

@@ -2,18 +2,20 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
 	jsonlog "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/logger"
 	commonserver "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/server"
 	"google.golang.org/grpc"
-	"net/http"
+
 	"playlistservice/api/authorizationservice"
 	contentserviceapi "playlistservice/api/contentservice"
 	playlistserviceapi "playlistservice/api/playlistservice"
 	"playlistservice/pkg/integrationtests/app"
 	"playlistservice/pkg/integrationtests/infrastructure"
-	"time"
 )
 
 var appID = "UNKNOWN"

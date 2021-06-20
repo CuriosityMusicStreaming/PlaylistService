@@ -3,6 +3,7 @@ package mysql
 import (
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/pkg/errors"
+
 	"playlistservice/pkg/playlistservice/app/service"
 	"playlistservice/pkg/playlistservice/domain"
 	"playlistservice/pkg/playlistservice/infrastructure/mysql/repository"
