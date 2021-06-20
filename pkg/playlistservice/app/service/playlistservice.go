@@ -44,7 +44,7 @@ type playlistService struct {
 
 func (service *playlistService) CreatePlaylist(name string, userDescriptor auth.UserDescriptor) (uuid.UUID, error) {
 	var playlistID domain.PlaylistID
-	err := service.executeInUnitOfWorkWithServiceLock(func(provider RepositoryProvider) error {
+	err := service.executeInUnitOfWorkWithServiceLock(playlistLockName, func(provider RepositoryProvider) error {
 		domainService := service.domainPlaylistService(provider)
 
 		var err error
@@ -58,7 +58,7 @@ func (service *playlistService) CreatePlaylist(name string, userDescriptor auth.
 }
 
 func (service *playlistService) SetPlaylistName(id uuid.UUID, userDescriptor auth.UserDescriptor, newName string) error {
-	return service.executeInUnitOfWorkWithServiceLock(func(provider RepositoryProvider) error {
+	return service.executeInUnitOfWorkWithServiceLock(playlistLockName+id.String(), func(provider RepositoryProvider) error {
 		domainService := service.domainPlaylistService(provider)
 
 		return domainService.SetPlaylistName(domain.PlaylistID(id), domain.PlaylistOwnerID(userDescriptor.UserID), newName)
@@ -72,7 +72,7 @@ func (service *playlistService) AddToPlaylist(id uuid.UUID, userDescriptor auth.
 	}
 
 	var playlistItemID domain.PlaylistItemID
-	err = service.executeInUnitOfWorkWithServiceLock(func(provider RepositoryProvider) error {
+	err = service.executeInUnitOfWorkWithServiceLock(playlistLockName+id.String(), func(provider RepositoryProvider) error {
 		var err2 error
 
 		playlistItemID, err2 = service.domainPlaylistService(provider).AddToPlaylist(
@@ -87,7 +87,7 @@ func (service *playlistService) AddToPlaylist(id uuid.UUID, userDescriptor auth.
 }
 
 func (service *playlistService) RemoveFromPlaylist(id uuid.UUID, userDescriptor auth.UserDescriptor) error {
-	return service.executeInUnitOfWorkWithServiceLock(func(provider RepositoryProvider) error {
+	return service.executeInUnitOfWorkWithServiceLock(playlistLockName+id.String(), func(provider RepositoryProvider) error {
 		return service.domainPlaylistService(provider).RemoveFromPlaylist(
 			domain.PlaylistItemID(id),
 			domain.PlaylistOwnerID(userDescriptor.UserID),
@@ -96,7 +96,7 @@ func (service *playlistService) RemoveFromPlaylist(id uuid.UUID, userDescriptor 
 }
 
 func (service *playlistService) RemovePlaylist(id uuid.UUID, userDescriptor auth.UserDescriptor) error {
-	return service.executeInUnitOfWorkWithServiceLock(func(provider RepositoryProvider) error {
+	return service.executeInUnitOfWorkWithServiceLock(playlistLockName+id.String(), func(provider RepositoryProvider) error {
 		return service.domainPlaylistService(provider).RemovePlaylist(
 			domain.PlaylistID(id),
 			domain.PlaylistOwnerID(userDescriptor.UserID),
@@ -108,8 +108,8 @@ func (service *playlistService) RemoveFromPlaylists(contentIDs []uuid.UUID) erro
 	return service.remover.RemoveFromPlaylists(contentIDs)
 }
 
-func (service *playlistService) executeInUnitOfWorkWithServiceLock(f func(provider RepositoryProvider) error) error {
-	return service.executeInUnitOfWork(playlistLockName, f)
+func (service *playlistService) executeInUnitOfWorkWithServiceLock(lockName string, f func(provider RepositoryProvider) error) error {
+	return service.executeInUnitOfWork(lockName, f)
 }
 
 func (service playlistService) executeInUnitOfWork(lockName string, f func(provider RepositoryProvider) error) error {
