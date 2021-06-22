@@ -24,8 +24,10 @@ type PlaylistItemView struct {
 type PlaylistSpecification struct {
 	PlaylistIDs []uuid.UUID
 	OwnerIDs    []uuid.UUID
+	ContentIDs  []uuid.UUID
 }
 
 type PlaylistQueryService interface {
 	GetPlaylists(spec PlaylistSpecification) ([]PlaylistView, error)
+	FindAllIDs(spec PlaylistSpecification) ([]uuid.UUID, error)
 }
