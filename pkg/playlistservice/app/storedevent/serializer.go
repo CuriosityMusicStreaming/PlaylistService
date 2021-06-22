@@ -88,6 +88,24 @@ func serializeEvent(event commondomain.Event) (eventPayload interface{}) {
 			PlaylistID: uuid.UUID(currEvent.PlaylistID),
 			OwnerID:    uuid.UUID(currEvent.OwnerID),
 		}
+	case domain.PlaylistItemsRemoved:
+		eventPayload = struct {
+			PlaylistIDToPlaylistItemIDsMap map[uuid.UUID][]uuid.UUID `json:"playlist_id_to_playlist_item_ids"`
+		}{
+			PlaylistIDToPlaylistItemIDsMap: convertPlaylistIDToPlaylistItemIDsMapToUUIDsMap(currEvent.PlaylistIDToPlaylistItemIDsMap),
+		}
 	}
 	return
+}
+
+func convertPlaylistIDToPlaylistItemIDsMapToUUIDsMap(idsMap map[domain.PlaylistID][]domain.PlaylistItemID) map[uuid.UUID][]uuid.UUID {
+	result := map[uuid.UUID][]uuid.UUID{}
+	for playlistID, playlistItemIDs := range idsMap {
+		convertedPlaylistItemIDs := make([]uuid.UUID, 0, len(playlistItemIDs))
+		for _, playlistItemID := range playlistItemIDs {
+			convertedPlaylistItemIDs = append(convertedPlaylistItemIDs, uuid.UUID(playlistItemID))
+		}
+		result[uuid.UUID(playlistID)] = convertedPlaylistItemIDs
+	}
+	return result
 }

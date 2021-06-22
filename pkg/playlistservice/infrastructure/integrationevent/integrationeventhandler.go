@@ -3,9 +3,9 @@ package integrationevent
 import (
 	"encoding/json"
 	"fmt"
-
 	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
 	"github.com/google/uuid"
+	"playlistservice/pkg/playlistservice/app/query"
 
 	"playlistservice/pkg/playlistservice/app/service"
 )
@@ -16,6 +16,7 @@ const (
 
 type DependencyContainer interface {
 	PlaylistService() service.PlaylistService
+	PlaylistQueryService() query.PlaylistQueryService
 }
 
 func NewIntegrationEventHandler(logger log.Logger, container DependencyContainer) Handler {
@@ -67,7 +68,13 @@ func (handler *integrationEventHandler) handleEvents(e event) error {
 			return err
 		}
 
-		return handler.container.PlaylistService().RemoveFromPlaylists([]uuid.UUID{contentID})
+		contentIDs := []uuid.UUID{contentID}
+		playlistIDs, err := handler.container.PlaylistQueryService().FindAllIDs(query.PlaylistSpecification{ContentIDs: contentIDs})
+		if err != nil {
+			return err
+		}
+
+		return handler.container.PlaylistService().RemoveContentFromPlaylists(contentIDs, playlistIDs)
 	}
 
 	if e.Type == "content_deleted" {
@@ -82,7 +89,13 @@ func (handler *integrationEventHandler) handleEvents(e event) error {
 			return err
 		}
 
-		return handler.container.PlaylistService().RemoveFromPlaylists([]uuid.UUID{contentID})
+		contentIDs := []uuid.UUID{contentID}
+		playlistIDs, err := handler.container.PlaylistQueryService().FindAllIDs(query.PlaylistSpecification{ContentIDs: contentIDs})
+		if err != nil {
+			return err
+		}
+
+		return handler.container.PlaylistService().RemoveContentFromPlaylists(contentIDs, playlistIDs)
 	}
 
 	return nil

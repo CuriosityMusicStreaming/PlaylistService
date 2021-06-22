@@ -106,6 +106,19 @@ func (playlist *Playlist) RemoveItem(itemID PlaylistItemID) error {
 	return nil
 }
 
+func (playlist *Playlist) RemoveContent(contentIDs []ContentID) ([]PlaylistItemID, error) {
+	var removedPlaylistItemIDs []PlaylistItemID
+	for id, item := range playlist.items {
+		for _, contentID := range contentIDs {
+			if item.contentID == contentID {
+				removedPlaylistItemIDs = append(removedPlaylistItemIDs, id)
+				delete(playlist.items, id)
+			}
+		}
+	}
+	return removedPlaylistItemIDs, nil
+}
+
 type PlaylistItem struct {
 	id        PlaylistItemID
 	contentID ContentID
@@ -133,6 +146,7 @@ type PlaylistRepository interface {
 	NewPlaylistItemID() PlaylistItemID
 	Find(id PlaylistID) (Playlist, error)
 	FindByItemID(playlistItemID PlaylistItemID) (Playlist, error)
+	FindAll(ids []PlaylistID) ([]Playlist, error)
 	Store(playlist Playlist) error
 	Remove(id PlaylistID) error
 }

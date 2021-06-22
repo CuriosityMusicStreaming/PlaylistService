@@ -65,6 +65,56 @@ func (repo *playlistRepository) Find(id domain.PlaylistID) (domain.Playlist, err
 	}), nil
 }
 
+func (repo *playlistRepository) FindAll(ids []domain.PlaylistID) ([]domain.Playlist, error) {
+	const selectSQL = `SELECT * from playlist WHERE playlist_id IN (?)`
+
+	binaryUUIDs := make([][]byte, 0, len(ids))
+
+	for _, id := range ids {
+		bytes, err := uuid.UUID(id).MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
+
+		binaryUUIDs = append(binaryUUIDs, bytes)
+	}
+
+	var playlists []sqlxPlaylist
+
+	query, args, err := sqlx.In(selectSQL, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	err = repo.client.Get(&playlists, query, args)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, errors.WithStack(err)
+	}
+
+	playlistsItemsMap, err := repo.fetchPlaylistItemsMap(binaryUUIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]domain.Playlist, 0, len(playlists))
+
+	for _, playlist := range playlists {
+		result = append(result, domain.LoadPlaylist(&playlistData{
+			id:        playlist.ID,
+			name:      playlist.Name,
+			ownerID:   playlist.OwnerID,
+			items:     convertPlaylistItems(playlistsItemsMap[playlist.ID]),
+			createdAt: playlist.CreatedAt,
+			updatedAt: playlist.UpdatedAt,
+		}))
+	}
+
+	return result, nil
+}
+
 func (repo *playlistRepository) FindByItemID(playlistItemID domain.PlaylistItemID) (domain.Playlist, error) {
 	const selectSQL = `
 		SELECT 
@@ -166,7 +216,7 @@ func (repo *playlistRepository) Remove(id domain.PlaylistID) error {
 }
 
 func (repo *playlistRepository) fetchPlaylistItems(id uuid.UUID) ([]sqlxPlaylistItem, error) {
-	const selectSQL = `SELECT playlist_item_id, content_id, created_at from playlist_item WHERE playlist_id = ?`
+	const selectSQL = `SELECT playlist_item_id, playlist_id, content_id, created_at from playlist_item WHERE playlist_id = ?`
 
 	binaryUUID, err := id.MarshalBinary()
 	if err != nil {
@@ -181,6 +231,35 @@ func (repo *playlistRepository) fetchPlaylistItems(id uuid.UUID) ([]sqlxPlaylist
 	}
 
 	return playlistItems, nil
+}
+
+func (repo *playlistRepository) fetchPlaylistItemsMap(ids [][]byte) (map[uuid.UUID][]sqlxPlaylistItem, error) {
+	const selectSQL = `SELECT playlist_item_id, playlist_id, content_id, created_at from playlist_item WHERE playlist_id IN (?)`
+
+	var playlistsItems []sqlxPlaylistItem
+
+	query, args, err := sqlx.In(selectSQL, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	err = repo.client.Select(&playlistsItems, query, args)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	result := map[uuid.UUID][]sqlxPlaylistItem{}
+
+	for _, playlistItem := range playlistsItems {
+		items, ok := result[playlistItem.PlaylistID]
+		if !ok {
+			items = []sqlxPlaylistItem{}
+		}
+		items = append(items, playlistItem)
+		result[playlistItem.PlaylistID] = items
+	}
+
+	return result, nil
 }
 
 //nolint
@@ -292,9 +371,10 @@ type sqlxPlaylist struct {
 }
 
 type sqlxPlaylistItem struct {
-	ID        uuid.UUID  `db:"playlist_item_id"`
-	ContentID uuid.UUID  `db:"content_id"`
-	CreatedAt *time.Time `db:"created_at"`
+	ID         uuid.UUID  `db:"playlist_item_id"`
+	PlaylistID uuid.UUID  `db:"playlist_id"`
+	ContentID  uuid.UUID  `db:"content_id"`
+	CreatedAt  *time.Time `db:"created_at"`
 }
 
 type playlistData struct {
