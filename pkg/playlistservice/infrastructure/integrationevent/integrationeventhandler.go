@@ -3,11 +3,10 @@ package integrationevent
 import (
 	"encoding/json"
 	"fmt"
-
 	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
 	"github.com/google/uuid"
-
 	"playlistservice/pkg/playlistservice/app/query"
+
 	"playlistservice/pkg/playlistservice/app/service"
 )
 
