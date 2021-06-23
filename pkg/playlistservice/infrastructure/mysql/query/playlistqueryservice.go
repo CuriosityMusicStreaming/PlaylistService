@@ -73,27 +73,6 @@ func (service *playlistQueryService) GetPlaylists(spec query.PlaylistSpecificati
 	return result, nil
 }
 
-func (service playlistQueryService) FindAllIDs(spec query.PlaylistSpecification) ([]uuid.UUID, error) {
-	selectSQL := `SELECT playlist_id FROM playlist`
-
-	conditions, args, err := getWhereConditionsBySpec(spec)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	if conditions != "" {
-		selectSQL += fmt.Sprintf(` WHERE %s`, conditions)
-	}
-
-	var playlistIDs []uuid.UUID
-
-	err = service.client.Select(&playlistIDs, selectSQL, args...)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	return playlistIDs, nil
-}
-
 func (service *playlistQueryService) getPlaylistsItemsMap(playlistIDs []uuid.UUID) (map[uuid.UUID][]sqlxPlaylistItemView, error) {
 	playlistsItems, err := service.getPlaylistsItems(playlistIDs)
 	if err != nil {
@@ -158,21 +137,6 @@ func getWhereConditionsBySpec(spec query.PlaylistSpecification) (string, []inter
 			return "", nil, errors.WithStack(err)
 		}
 		sqlQuery, args, err := sqlx.In(`playlist_id IN (?)`, ids)
-		if err != nil {
-			return "", nil, errors.WithStack(err)
-		}
-		conditions = append(conditions, sqlQuery)
-		for _, arg := range args {
-			params = append(params, arg)
-		}
-	}
-
-	if len(spec.ContentIDs) != 0 {
-		ids, err := uuidsToBinaryUUIDs(spec.ContentIDs)
-		if err != nil {
-			return "", nil, errors.WithStack(err)
-		}
-		sqlQuery, args, err := sqlx.In(`content_id IN (?)`, ids)
 		if err != nil {
 			return "", nil, errors.WithStack(err)
 		}

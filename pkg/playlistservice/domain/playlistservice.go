@@ -10,7 +10,6 @@ type PlaylistService interface {
 	AddToPlaylist(id PlaylistID, ownerID PlaylistOwnerID, contentID ContentID) (PlaylistItemID, error)
 	RemoveFromPlaylist(id PlaylistItemID, ownerID PlaylistOwnerID) error
 	RemovePlaylist(id PlaylistID, ownerID PlaylistOwnerID) error
-	RemoveFromPlaylists(contentIDs []ContentID, playlistIDs []PlaylistID) error
 }
 
 func NewPlaylistService(playlistRepo PlaylistRepository, eventDispatcher EventDispatcher) PlaylistService {
@@ -132,33 +131,6 @@ func (service *playlistService) RemoveFromPlaylist(id PlaylistItemID, ownerID Pl
 		PlaylistID:     playlist.ID(),
 		PlaylistItemID: id,
 	})
-}
-
-func (service *playlistService) RemoveFromPlaylists(contentIDs []ContentID, playlistIDs []PlaylistID) error {
-	playlists, err := service.playlistRepo.FindAll(playlistIDs)
-	if err != nil {
-		return err
-	}
-
-	removedPlaylistItemIDsMap := map[PlaylistID][]PlaylistItemID{}
-
-	for _, playlist := range playlists {
-		removedItemIDs, err2 := playlist.RemoveContent(contentIDs)
-		if err2 != nil {
-			return err2
-		}
-
-		removedPlaylistItemIDsMap[playlist.ID()] = removedItemIDs
-	}
-
-	for _, playlist := range playlists {
-		err2 := service.playlistRepo.Store(playlist)
-		if err2 != nil {
-			return err2
-		}
-	}
-
-	return service.eventDispatcher.Dispatch(PlaylistItemsRemoved{PlaylistIDToPlaylistItemIDsMap: removedPlaylistItemIDsMap})
 }
 
 func (service *playlistService) RemovePlaylist(id PlaylistID, ownerID PlaylistOwnerID) error {

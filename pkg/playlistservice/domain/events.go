@@ -95,11 +95,3 @@ type PlaylistRemoved struct {
 func (p PlaylistRemoved) ID() string {
 	return "playlist_removed"
 }
-
-type PlaylistItemsRemoved struct {
-	PlaylistIDToPlaylistItemIDsMap map[PlaylistID][]PlaylistItemID
-}
-
-func (p PlaylistItemsRemoved) ID() string {
-	return "playlist_items_removed"
-}

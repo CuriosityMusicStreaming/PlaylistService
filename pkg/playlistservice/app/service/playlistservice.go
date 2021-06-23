@@ -18,7 +18,7 @@ type PlaylistService interface {
 	RemoveFromPlaylist(id uuid.UUID, userDescriptor auth.UserDescriptor) error
 	RemovePlaylist(id uuid.UUID, userDescriptor auth.UserDescriptor) error
 
-	RemoveContentFromPlaylists(contentIDs []uuid.UUID, playlistIDs []uuid.UUID) error
+	RemoveFromPlaylists(contentIDs []uuid.UUID) error
 }
 
 func NewPlaylistService(
@@ -104,23 +104,8 @@ func (service *playlistService) RemovePlaylist(id uuid.UUID, userDescriptor auth
 	})
 }
 
-func (service *playlistService) RemoveContentFromPlaylists(contentIDs []uuid.UUID, playlistIDs []uuid.UUID) error {
-	domainContentIDs := make([]domain.ContentID, 0, len(contentIDs))
-	for _, contentID := range contentIDs {
-		domainContentIDs = append(domainContentIDs, domain.ContentID(contentID))
-	}
-
-	domainPlaylistIDs := make([]domain.PlaylistID, 0, len(playlistIDs))
-	for _, playlistID := range playlistIDs {
-		domainPlaylistIDs = append(domainPlaylistIDs, domain.PlaylistID(playlistID))
-	}
-
-	return service.executeInUnitOfWorkWithServiceLock("clear-playlists-contents", func(provider RepositoryProvider) error {
-		return service.domainPlaylistService(provider).RemoveFromPlaylists(
-			domainContentIDs,
-			domainPlaylistIDs,
-		)
-	})
+func (service *playlistService) RemoveFromPlaylists(contentIDs []uuid.UUID) error {
+	return service.remover.RemoveFromPlaylists(contentIDs)
 }
 
 func (service *playlistService) executeInUnitOfWorkWithServiceLock(lockName string, f func(provider RepositoryProvider) error) error {
